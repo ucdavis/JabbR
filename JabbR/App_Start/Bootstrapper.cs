@@ -17,7 +17,9 @@ using Ninject;
 using SignalR;
 using SignalR.Hosting.AspNet;
 using SignalR.Infrastructure;
+using SignalR.MessageBus;
 using SignalR.Ninject;
+using SignalR.Redis;
 
 [assembly: WebActivator.PreApplicationStartMethod(typeof(JabbR.App_Start.Bootstrapper), "PreAppStart")]
 
@@ -74,6 +76,8 @@ namespace JabbR.App_Start
 
             AspNetHost.SetResolver(resolver);
 
+            InitializeMessageBus(resolver);
+
             // Perform the required migrations
             DoMigrations();
 
@@ -84,6 +88,20 @@ namespace JabbR.App_Start
             SetupErrorHandling();
 
             ClearConnectedClients(repositoryFactory());
+        }
+
+        private static void InitializeMessageBus(NinjectDependencyResolver resolver)
+        {
+            var settings = resolver.Resolve<IApplicationSettings>();
+            // No redis so bail
+            if (String.IsNullOrEmpty(settings.RedisServer))
+            {
+                return;
+            }
+
+            int db = 0;
+            var redisBus = new Lazy<RedisMessageBus>(() => new RedisMessageBus(settings.RedisServer, settings.RedisPort, settings.RedisPassword, db, "JabbR", resolver));
+            resolver.Register(typeof(IMessageBus), () => redisBus.Value);
         }
 
         private static void ClearConnectedClients(IJabbrRepository repository)
