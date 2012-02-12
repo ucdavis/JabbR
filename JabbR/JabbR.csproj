@@ -76,7 +76,7 @@
       <HintPath>..\lib\SignalR.dll</HintPath>
     </Reference>
     <Reference Include="SignalR.Hosting.AspNet, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\SignalR\SignalR.Hosting.AspNet\bin\Debug\SignalR.Hosting.AspNet.dll</HintPath>
+      <HintPath>..\lib\SignalR.Hosting.AspNet.dll</HintPath>
     </Reference>
     <Reference Include="SignalR.Ninject, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SignalR.Ninject.0.4\lib\net40\SignalR.Ninject.dll</HintPath>
