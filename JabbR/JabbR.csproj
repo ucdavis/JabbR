@@ -71,6 +71,9 @@
     </Reference>
     <Reference Include="protobuf-net">
       <HintPath>..\packages\protobuf-net.2.0.0.480\lib\net40\protobuf-net.dll</HintPath>
+     </Reference>
+    <Reference Include="RouteMagic">
+      <HintPath>..\packages\RouteMagic.1.2\lib\net40\RouteMagic.dll</HintPath>
     </Reference>
     <Reference Include="SignalR, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\lib\SignalR.dll</HintPath>
@@ -130,6 +133,7 @@
     <Content Include="Content\images\contentproviders\bbcnews-header.png" />
     <Content Include="Content\images\contentproviders\bbcnews-masthead.png" />
     <Content Include="Content\images\emoji20.png" />
+    <Content Include="Content\images\download-icon.png" />
     <Content Include="Content\images\emojis\+1.png" />
     <Content Include="Content\images\emojis\-1.png" />
     <Content Include="Content\images\emojis\0.png" />
@@ -794,6 +798,7 @@
     <Compile Include="ContentProviders\GoogleDocsFormProvider.cs" />
     <Compile Include="ContentProviders\SlideshareContentProvider.cs" />
     <Compile Include="ContentProviders\GistContentProvider.cs" />
+    <Compile Include="api\MessagesHandler.cs" />
     <Compile Include="Hubs\Chat.cs" />
     <Compile Include="ContentProviders\CollegeHumorContentProvider.cs" />
     <Compile Include="ContentProviders\ImgurContentProvider.cs" />
@@ -856,6 +861,10 @@
     <Compile Include="Migrations\201201280922163_ElmahInSql.cs" />
     <Compile Include="Migrations\201201280922163_ElmahInSql.Designer.cs">
       <DependentUpon>201201280922163_ElmahInSql.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201202122252259_RoomTopic.cs" />
+    <Compile Include="Migrations\201202122252259_RoomTopic.Designer.cs">
+      <DependentUpon>201202122252259_RoomTopic.cs</DependentUpon>
     </Compile>
     <Compile Include="Models\ChatClient.cs" />
     <Compile Include="Models\ClientState.cs" />

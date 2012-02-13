@@ -6,14 +6,17 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Hosting;
+using System.Web.Routing;
 using Elmah;
 using JabbR.ContentProviders.Core;
+using JabbR.Handlers;
 using JabbR.Migrations;
 using JabbR.Models;
 using JabbR.Services;
 using JabbR.ViewModels;
 using Microsoft.CSharp.RuntimeBinder;
 using Ninject;
+using RouteMagic;
 using SignalR;
 using SignalR.Hosting.AspNet;
 using SignalR.Infrastructure;
@@ -88,9 +91,19 @@ namespace JabbR.App_Start
             SetupErrorHandling();
 
             ClearConnectedClients(repositoryFactory());
+
+            SetupRoutes(kernel);
         }
 
-        private static void InitializeMessageBus(NinjectDependencyResolver resolver)
+        private static void SetupRoutes(IKernel kernel)
+        {
+            RouteTable.Routes.MapHttpHandler("Download", "api/v1/messages/{room}/{format}", 
+                                             new { format = "json" },
+                                             new { }, 
+                                             ctx => kernel.Get<MessagesHandler>());
+        }
+
+        private static void InitializeMessageBus(IDependencyResolver resolver)
         {
             var settings = resolver.Resolve<IApplicationSettings>();
             // No redis so bail
@@ -99,9 +112,7 @@ namespace JabbR.App_Start
                 return;
             }
 
-            int db = 0;
-            var redisBus = new Lazy<RedisMessageBus>(() => new RedisMessageBus(settings.RedisServer, settings.RedisPort, settings.RedisPassword, db, "JabbR", resolver));
-            resolver.Register(typeof(IMessageBus), () => redisBus.Value);
+            resolver.UseRedis(settings.RedisServer, settings.RedisPort, settings.RedisPassword, "JabbR");
         }
 
         private static void ClearConnectedClients(IJabbrRepository repository)
