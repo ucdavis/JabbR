@@ -11,5 +11,5 @@ deploy/*
 *.bak
 packages/
 msbuild.log
-_Resharper*/
+_Re[Ss]harper*/
 _AzurePackage/
