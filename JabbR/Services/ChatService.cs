@@ -275,6 +275,18 @@ namespace JabbR.Services
             _crypto = crypto;
         }
 
+        public ChatUser AddUser(string identity)
+        {
+            var identityExists = _repository.Users.Any(u => u.Identity.Equals(identity, StringComparison.OrdinalIgnoreCase));
+            if (identityExists)
+            {
+                throw new InvalidOperationException(
+                    string.Format("{0} has already been added to the DB, no need to recreate", identity));
+            }
+
+            return AddUser(identity, identity, null); //In the future we can look up full name and email
+        }
+
         public ChatUser AddUser(string userName, string identity, string email)
         {
             if (!IsValidUserName(userName))

@@ -61,26 +61,15 @@ namespace JabbR
             // Get the client state
             ClientState clientState = GetClientState();
 
-            // Try to get the user from the client state
-            ChatUser user = _repository.GetUserById(clientState.UserId);
+            var currentUser = HttpContext.Current.User.Identity.Name;
 
-            // Threre's no user being tracked
-            if (user == null)
-            {
-                return false;
-            }
-
-            // Migrate all users to use new auth
-            if (!String.IsNullOrEmpty(_settings.AuthApiKey) &&
-                String.IsNullOrEmpty(user.Identity))
-            {
-                return false;
-            }
+            // Get the user from the client state or add new user for first-timers
+            ChatUser user = _repository.GetUserByIdentity(currentUser) ?? _service.AddUser(currentUser);
 
             // Update some user values
             _service.UpdateActivity(user, Context.ConnectionId, UserAgent);
             _repository.CommitChanges();
-
+            
             OnUserInitialize(clientState, user);
 
             return true;
