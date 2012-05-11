@@ -10,6 +10,7 @@ namespace JabbR.Models
         [Key]
         public int Key { get; set; }
 
+        [MaxLength(200)]
         public string Id { get; set; }
         public string Name { get; set; }
         // MD5 email hash for gravatar
@@ -34,6 +35,8 @@ namespace JabbR.Models
         public string Identity { get; set; }
 
         public string Email { get; set; }
+
+        public bool IsAdmin { get; set; }
 
         // List of clients that are currently connected for this user
         public virtual ICollection<ChatClient> ConnectedClients { get; set; }

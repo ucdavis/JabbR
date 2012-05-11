@@ -10,16 +10,13 @@ using System.Web.Routing;
 using Elmah;
 using JabbR.ContentProviders.Core;
 using JabbR.Handlers;
-using JabbR.Migrations;
 using JabbR.Models;
 using JabbR.Services;
 using JabbR.ViewModels;
-using Microsoft.CSharp.RuntimeBinder;
 using Ninject;
 using RouteMagic;
 using SignalR;
-using SignalR.Hosting.AspNet;
-using SignalR.Infrastructure;
+using SignalR.Hosting.Common;
 using SignalR.Ninject;
 
 [assembly: WebActivator.PostApplicationStartMethod(typeof(JabbR.App_Start.Bootstrapper), "PreAppStart")]
@@ -75,7 +72,10 @@ namespace JabbR.App_Start
 
             var resolver = new NinjectDependencyResolver(kernel);
 
-            AspNetHost.SetResolver(resolver);
+            var host = new Host(resolver);
+            host.Configuration.KeepAlive = TimeSpan.FromSeconds(30);
+
+            RouteTable.Routes.MapHubs(resolver);
 
             // Perform the required migrations
             DoMigrations();
@@ -86,9 +86,40 @@ namespace JabbR.App_Start
 
             SetupErrorHandling();
 
+            SetupAdminUsers(kernel);
+
             ClearConnectedClients(repositoryFactory());
 
             SetupRoutes(kernel);
+        }
+
+        private static void SetupAdminUsers(IKernel kernel)
+        {
+            var repository = kernel.Get<IJabbrRepository>();
+            var chatService = kernel.Get<IChatService>();
+            var settings = kernel.Get<IApplicationSettings>();
+
+            if (!repository.Users.Any(u => u.IsAdmin))
+            {
+                string defaultAdminUserName = settings.DefaultAdminUserName;
+                string defaultAdminPassword = settings.DefaultAdminPassword;
+
+                if (String.IsNullOrWhiteSpace(defaultAdminUserName) || String.IsNullOrWhiteSpace(defaultAdminPassword))
+                {
+                    throw new InvalidOperationException("You have not provided a default admin username and/or password");
+                }
+
+                ChatUser defaultAdmin = repository.GetUserByName(defaultAdminUserName);
+
+                if (defaultAdmin == null)
+                {
+                    defaultAdmin = chatService.AddUser(defaultAdminUserName, null, null, defaultAdminPassword);
+                }
+
+                defaultAdmin.IsAdmin = true;
+                repository.CommitChanges();
+            }
+            
         }
 
         private static void SetupRoutes(IKernel kernel)
@@ -132,7 +163,7 @@ namespace JabbR.App_Start
             }
 
             // Only run migrations for SQL server (Sql ce not supported as yet)
-            var settings = new Settings();
+            var settings = new JabbR.Models.Migrations.MigrationsConfiguration();
             var migrator = new DbMigrator(settings);
             migrator.Update();
         }
@@ -187,7 +218,7 @@ namespace JabbR.App_Start
         private static void MarkInactiveUsers(IJabbrRepository repo, IDependencyResolver resolver)
         {
             var connectionManager = resolver.Resolve<IConnectionManager>();
-            var clients = connectionManager.GetClients<Chat>();
+            var clients = connectionManager.GetHubContext<Chat>().Clients;
             var inactiveUsers = new List<ChatUser>();
 
             foreach (var user in repo.Users)

@@ -11,6 +11,8 @@ namespace JabbR.Models
         public int Key { get; set; }
 
         public DateTime? LastNudged { get; set; }
+
+        [MaxLength(200)]
         public string Name { get; set; }
         public bool Closed { get; set; }
         [StringLength(80)]
@@ -23,6 +25,7 @@ namespace JabbR.Models
 
         // Creator of the room
         public virtual ChatUser Creator { get; set; }
+        public int? CreatorKey { get; set; }
 
         // Creator and owners
         public virtual ICollection<ChatUser> Owners { get; set; } 

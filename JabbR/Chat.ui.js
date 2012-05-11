@@ -717,7 +717,7 @@
             $downloadDialogButton = $('#download-dialog-button');
             $downloadRange = $('#download-range');
             $disconnectDialog = $('#disconnect-dialog');
-            $login = $('.janrainEngage');
+            $login = $('#jabbr-login');
             $updatePopup = $('#jabbr-update');
             focus = true;
             $roomFilterInput = $('#users-filter');
@@ -861,7 +861,7 @@
                 var url = document.location.href;
                 var nav = url.indexOf('#');
                 url = nav > 0 ? url.substring(0, nav) : url;
-                url = url.replace('index.htm', '');
+                url = url.replace('default.aspx', '');
                 url += 'api/v1/messages/' +
                        encodeURI(room.getName()) +
                        '?download=true&range=' +
@@ -1006,9 +1006,7 @@
                 $user = room.getUser(ownerName);
             $user
                 .attr('data-owner', true)
-                .data('owner', true)
-                .find('.owner')
-                .text('(owner)');
+                .data('owner', true);
             room.updateUserStatus($user);
         },
         clearRoomOwner: function (ownerName, roomName) {
@@ -1016,9 +1014,7 @@
                 $user = room.getUser(ownerName);
             $user
                  .removeAttr('data-owner')
-                 .data('owner', false)
-                 .find('.owner')
-                 .text('');
+                 .data('owner', false);
             room.updateUserStatus($user);
         },
         setActiveRoom: function (roomName) {
@@ -1127,6 +1123,7 @@
             $user = templates.user.tmpl(userViewModel);
             $user.data('inroom', roomName);
             $user.data('owner', userViewModel.owner);
+            $user.data('admin', userViewModel.admin);
 
             room.addUser(userViewModel, $user);
             updateNote(userViewModel, $user);
@@ -1442,14 +1439,20 @@
             return ui.name;
         },
         showLogin: function () {
-            if (janrain.ready === false) {
-                window.setTimeout(function () {
-                    janrain.engage.signin.modal.init();
-                }, 1000);
+            if (typeof (janrain) !== 'undefined') {
+                if (janrain.ready === false) {
+                    window.setTimeout(function () {
+                        $login.modal({ backdrop: true, keyboard: true });
+                    }, 1000);
+                }
+                else {
+                    $login.modal({ backdrop: true, keyboard: true });
+                }
+
+                return true;
             }
-            else {
-                janrain.engage.signin.modal.init();
-            }
+
+            return false;
         },
         showDisconnectUI: function () {
             $disconnectDialog.modal();
@@ -1492,6 +1495,26 @@
             if ($message.hasClass('failed') === false) {
                 $message.addClass('loading');
             }
+        },
+        setRoomAdmin: function (adminName, roomName) {
+            var room = getRoomElements(roomName),
+                $user = room.getUser(adminName);
+            $user
+                .attr('data-admin', true)
+                .data('admin', true)
+                .find('.admin')
+                .text('(admin)');
+            room.updateUserStatus($user);
+        },
+        clearRoomAdmin: function (adminName, roomName) {
+            var room = getRoomElements(roomName),
+                $user = room.getUser(adminName);
+            $user
+                 .removeAttr('data-admin')
+                 .data('admin', false)
+                 .find('.admin')
+                 .text('');
+            room.updateUserStatus($user);
         }
     };
 

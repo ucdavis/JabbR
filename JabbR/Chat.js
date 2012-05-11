@@ -6,6 +6,15 @@
 (function ($, connection, window, ui, utility) {
     "use strict";
 
+    window.onerror = function () {
+        if (typeof (console) !== 'undefined') {
+            console.log('ERROR!!');
+            for (var i = 0; i < arguments.length; i++) {
+                console.log(arguments[i]);
+            }
+        }
+    };
+
     var chat = connection.chat,
         messageHistory = [],
         historyLocation = 0,
@@ -117,7 +126,8 @@
             flag: user.Flag,
             country: user.Country,
             lastActive: lastActive,
-            timeAgo: $.timeago(lastActive)
+            timeAgo: $.timeago(lastActive),
+            admin: user.IsAdmin
         };
     }
 
@@ -147,14 +157,17 @@
     }
 
     function updateTitle() {
-        if (unread === 0) {
-            document.title = originalTitle;
-        }
-        else {
-            document.title =
+        // ugly hack via http://stackoverflow.com/a/2952386/188039
+        window.setTimeout(function () {
+            if (unread === 0) {
+                document.title = originalTitle;
+            }
+            else {
+                document.title =
                 (isUnreadMessageForUser ? '*' : '')
                 + '(' + unread + ') ' + originalTitle;
-        }
+            }
+        }, 200);
     }
 
     function updateUnread(room, isMentioned) {
@@ -536,6 +549,16 @@
         ui.addPrivateMessage('<emp>*' + from + '* &raquo; *' + to + '*</emp> ' + message, 'pm');
     };
 
+    chat.sendInvite = function (from, to, roomLink) {
+        if (isSelf({ Name: to })) {
+            ui.notify(true);
+            ui.addPrivateMessage('*' + from + '* has invited you to ' + roomLink + '. Click the room name to join.', 'pm');
+        }
+        else {
+            ui.addPrivateMessage('Invitation to *' + to + '* to join ' + roomLink + ' has been sent.', 'pm');
+        }
+    };
+
     chat.nudge = function (from, to) {
         function shake(n) {
             var move = function (x, y) {
@@ -653,6 +676,37 @@
         }
     };
 
+    chat.addAdmin = function (user, room) {
+        ui.setRoomAdmin(user.Name, room);
+    };
+
+    chat.removeAdmin = function (user, room) {
+        ui.clearRoomAdmin(user.Name, room);
+    };
+
+    // Called when you make someone an admin
+    chat.adminMade = function (user) {
+        ui.addMessage(user + ' is now an admin', 'notification', this.activeRoom);
+    };
+
+    chat.adminRemoved = function (user) {
+        ui.addMessage(user + ' is no longer an admin', 'notification', this.activeRoom);
+    };
+
+    // Called when you've been made an admin
+    chat.makeAdmin = function () {
+        ui.addMessage('You are now an admin', 'notification', this.activeRoom);
+    };
+
+    // Called when you've been removed as an admin
+    chat.demoteAdmin = function () {
+        ui.addMessage('You are no longer an admin', 'notification', this.activeRoom);
+    };
+
+    chat.broadcastMessage = function (message, room) {
+        ui.addMessage(message, 'notification highlight', room);
+    };
+
     $ui.bind(ui.events.typing, function () {
         // If not in a room, don't try to send typing notifications
         if (!chat.activeRoom) {
@@ -682,6 +736,13 @@
 
 
         if (msg[0] !== '/') {
+
+            // if you're in the lobby, you can't send mesages (only commands)
+            if (chat.activeRoom === undefined) {
+                ui.addMessage('You cannot send messages within the Lobby', 'error');
+                return false;
+            }
+
             // Added the message to the ui first
             var viewModel = {
                 name: chat.name,
@@ -825,8 +886,13 @@
                 })
                 .done(function (success) {
                     if (success === false) {
-                        ui.showLogin();
-                        ui.addMessage('Type /login to show the login screen', 'notification');
+                        if (ui.showLogin() === true) {
+                            ui.addMessage('Type /login to show the login screen', 'notification');
+                        }
+                        else {
+                            ui.addMessage('Use /nick user password to log in with jabbr', 'notification');
+                            ui.addMessage('To enable janrain login, setup the missing values in web.config', 'notification');
+                        }
                     }
                     // get list of available commands
                     chat.getCommands()

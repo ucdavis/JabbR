@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -16,6 +17,10 @@
     <UseIISExpress>true</UseIISExpress>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>4.0</OldToolsVersion>
+    <UpgradeBackupLocation />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -43,11 +48,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\elmah.corelibrary.1.2.1\lib\Elmah.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework">
-      <HintPath>..\packages\EntityFramework.4.2.0.0\lib\net40\EntityFramework.dll</HintPath>
-    </Reference>
-    <Reference Include="EntityFramework.Migrations">
-      <HintPath>..\packages\EntityFramework.Migrations.0.7.0.1\lib\net40\EntityFramework.Migrations.dll</HintPath>
+    <Reference Include="EntityFramework, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.4.3.1\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\packages\HtmlAgilityPack.1.4.3\lib\HtmlAgilityPack.dll</HintPath>
@@ -60,23 +63,32 @@
       <Private>True</Private>
       <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=4.0.7.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.4.0.7\lib\net40\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Newtonsoft.Json.4.5.5\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Ninject, Version=2.2.0.0, Culture=neutral, PublicKeyToken=c7192dc5380945e7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Ninject.2.2.1.4\lib\net40-Full\Ninject.dll</HintPath>
     </Reference>
     <Reference Include="RouteMagic">
       <HintPath>..\packages\RouteMagic.1.2\lib\net40\RouteMagic.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SignalR.Server.0.4.0.0\lib\net40\SignalR.dll</HintPath>
+    <Reference Include="SignalR, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SignalR.Server.0.5.0\lib\net40\SignalR.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR.Hosting.AspNet, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SignalR.Hosting.AspNet.0.4.0.0\lib\net40\SignalR.Hosting.AspNet.dll</HintPath>
+    <Reference Include="SignalR.Hosting.AspNet, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SignalR.Hosting.AspNet.0.5.0\lib\net40\SignalR.Hosting.AspNet.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR.Ninject, Version=0.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\SignalR.Ninject.0.4\lib\net40\SignalR.Ninject.dll</HintPath>
+    <Reference Include="SignalR.Hosting.Common, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SignalR.Hosting.Common.0.5.0\lib\net40\SignalR.Hosting.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="SignalR.Ninject, Version=0.5.0.10509, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\SignalR.Ninject.0.5.0\lib\net40\SignalR.Ninject.dll</HintPath>
     </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
@@ -711,7 +723,7 @@
     <Content Include="Content\images\big-logo.png" />
     <Content Include="Content\images\logo32.png" />
     <Content Include="Content\images\small-logo.png" />
-    <Content Include="index.htm" />
+    <Content Include="default.aspx" />
     <Content Include="Mobile.css" />
     <Content Include="mobile.htm" />
     <Content Include="Content\sounds\notification.wav" />
@@ -732,8 +744,8 @@
     <Content Include="Scripts\jquery.livesearch.js" />
     <Content Include="Scripts\jquery.mobile-1.0rc2.js" />
     <Content Include="Scripts\jquery.mobile-1.0rc2.min.js" />
-    <Content Include="Scripts\jquery.signalR.js" />
-    <Content Include="Scripts\jquery.signalR.min.js" />
+    <Content Include="Scripts\jquery.signalR-0.5.0.js" />
+    <Content Include="Scripts\jquery.signalR-0.5.0.min.js" />
     <Content Include="Scripts\jquery.sortElements.js" />
     <Content Include="Scripts\jquery.timeago.0.10.js" />
     <Content Include="Scripts\jQuery.tmpl.js" />
@@ -868,9 +880,58 @@
     <Compile Include="Migrations\201202122252259_RoomTopic.Designer.cs">
       <DependentUpon>201202122252259_RoomTopic.cs</DependentUpon>
     </Compile>
-    <Compile Include="Models\ChatClient.cs" />
-    <Compile Include="Models\ClientState.cs" />
-    <Compile Include="Models\ClientMessage.cs" />
+    <Compile Include="Migrations\201204231611225_Indexes.cs" />
+    <Compile Include="Migrations\201204231611225_Indexes.Designer.cs">
+      <DependentUpon>201204231611225_Indexes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201204241402266_UpgradeToEF431.cs" />
+    <Compile Include="Migrations\201204241402266_UpgradeToEF431.Designer.cs">
+      <DependentUpon>201204241402266_UpgradeToEF431.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201205081819121_AdminUser.cs" />
+    <Compile Include="Migrations\201205081819121_AdminUser.Designer.cs">
+      <DependentUpon>201205081819121_AdminUser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Models\ChatClient.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ChatMessage.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ChatRoom.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ChatUser.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ClientMessage.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ClientState.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\IJabbrRepository.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\InMemoryRepository.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\JabbrContext.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\Mapping\ChatClientMap.cs" />
+    <Compile Include="Models\Mapping\ChatMessageMap.cs" />
+    <Compile Include="Models\Mapping\ChatRoomMap.cs" />
+    <Compile Include="Models\Mapping\ChatUserMap.cs" />
+    <Compile Include="Models\PersistedRepository.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\RepositoryExtensions.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\UserStatus.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Services\ApplicationSettings.cs" />
     <Compile Include="Services\ChatService.cs" />
     <Compile Include="Services\CryptoService.cs" />
@@ -899,19 +960,10 @@
     <Compile Include="Migrations\201111280403450_MultipleOwners.Designer.cs">
       <DependentUpon>201111280403450_MultipleOwners.cs</DependentUpon>
     </Compile>
-    <Compile Include="Migrations\Settings.cs" />
-    <Compile Include="Models\ChatMessage.cs" />
-    <Compile Include="Models\ChatRoom.cs" />
-    <Compile Include="Models\ChatUser.cs" />
-    <Compile Include="Models\IJabbrRepository.cs" />
-    <Compile Include="Models\InMemoryRepository.cs" />
-    <Compile Include="Models\JabbrContext.cs" />
-    <Compile Include="Models\PersistedRepository.cs" />
-    <Compile Include="Models\RepositoryExtensions.cs" />
+    <Compile Include="Migrations\MigrationsConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ViewModels\MessageViewModel.cs" />
     <Compile Include="ViewModels\RoomViewModel.cs" />
-    <Compile Include="Models\UserStatus.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -927,8 +979,13 @@
     <Content Include="Auth\CasLogin.ashx" />
     <Content Include="Auth\CasLogout.ashx" />
   </ItemGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
   <ProjectExtensions>
     <VisualStudio>
       <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">

@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
 using JabbR.Commands;
@@ -113,11 +111,8 @@ namespace JabbR
                     // Tell the people in this room that you've joined
                     Clients[room.Name].addUser(userViewModel, room.Name, isOwner).Wait();
 
-                    // Update the room count
-                    OnRoomChanged(room);
-
                     // Add the caller to the group so they receive messages
-                    GroupManager.AddToGroup(Context.ConnectionId, room.Name).Wait();
+                    Groups.Add(Context.ConnectionId, room.Name).Wait();
                 }
             }
 
@@ -239,10 +234,11 @@ namespace JabbR
                 new { Name = "msg", Description = "Type /msg @nickname (message) to send a private message to nickname. @ is optional." },
                 new { Name = "leave", Description = "Type /leave to leave the current room. Type /leave [room name] to leave a specific room." },
                 new { Name = "rooms", Description = "Type /rooms to show the list of rooms" },
-                new { Name = "where", Description = "Type /where [name] to the rooms that user is in" },
+                new { Name = "where", Description = "Type /where [name] to list the rooms that user is in" },
                 new { Name = "who", Description = "Type /who to show a list of all users, /who [name] to show specific information about that user" },
                 new { Name = "list", Description = "Type /list (room) to show a list of users in the room" },
                 new { Name = "gravatar", Description = "Type /gravatar [email] to set your gravatar." },
+                new { Name = "invite", Description = "Type /invite [user] [room] - To invite a user to join a room." },
                 new { Name = "nudge", Description = "Type /nudge to send a nudge to the whole room, or \"/nudge @nickname\" to nudge a particular user. @ is optional." },
                 new { Name = "kick", Description = "Type /kick [user] to kick a user from the room. Note, this is only valid for owners of the room." },
                 new { Name = "logout", Description = "Type /logout - To logout from this client (chat cookie will be removed)." },
@@ -257,7 +253,8 @@ namespace JabbR
                 new { Name = "note", Description = "Type /note - To set a note shown via a paperclip icon next to your name, with the message appearing when you hover over it."},
                 new { Name = "afk", Description = "Type /afk - (aka. Away From Keyboard). To set a temporary note shown via a paperclip icon next to your name, with the message appearing when you hover over it. This note will disappear when you first resume typing."},
                 new { Name = "flag", Description = "Type /flag [Iso 3366-2 Code] - To show a small flag which represents your nationality. Eg. /flag US for a USA flag. ISO Reference Chart: http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2 (Apologies to people with dual citizenship). "},
-                new { Name = "topic", Description = "Type /topic [topic] to set the room topic. Type /topic to clear the room's topic." }
+                new { Name = "topic", Description = "Type /topic [topic] to set the room topic. Type /topic to clear the room's topic." },
+                new { Name = "roomname", Description = "Type #roomname to add a link to that room in your message. Eg. If you add \"#meta\" to your message it will be replaced with a link to /#/rooms/meta." }
             };
         }
 
@@ -271,7 +268,7 @@ namespace JabbR
                 Name = r.Name,
                 Count = r.Users.Count(u => u.Status != (int)UserStatus.Offline),
                 Private = r.Private
-            });
+            }).ToList();
 
             return rooms;
         }
@@ -361,18 +358,17 @@ namespace JabbR
             var userViewModel = new UserViewModel(user);
             var rooms = new List<RoomViewModel>();
 
+            var ownedRooms = user.OwnedRooms.Select(r => r.Key);
+
             foreach (var room in user.Rooms)
             {
-                var isOwner = user.OwnedRooms.Contains(room);
+                var isOwner = ownedRooms.Contains(room.Key);
 
                 // Tell the people in this room that you've joined
                 Clients[room.Name].addUser(userViewModel, room.Name, isOwner).Wait();
 
-                // Update the room count
-                OnRoomChanged(room);
-
                 // Add the caller to the group so they receive messages
-                GroupManager.AddToGroup(clientId, room.Name).Wait();
+                Groups.Add(clientId, room.Name).Wait();
 
                 // Add to the list of room names
                 rooms.Add(new RoomViewModel
@@ -456,8 +452,6 @@ namespace JabbR
                     var userViewModel = new UserViewModel(user);
 
                     Clients[room.Name].leave(userViewModel, room.Name).Wait();
-
-                    OnRoomChanged(room);
                 }
             }
         }
@@ -475,7 +469,7 @@ namespace JabbR
 
             foreach (var client in user.ConnectedClients)
             {
-                GroupManager.RemoveFromGroup(client.Id, room.Name).Wait();
+                Groups.Remove(client.Id, room.Name).Wait();
             }
 
             OnRoomChanged(room);
@@ -504,7 +498,7 @@ namespace JabbR
                 Clients[client.Id].kick(room.Name);
 
                 // Remove the user from this the room group so he doesn't get the leave message
-                GroupManager.RemoveFromGroup(client.Id, room.Name).Wait();
+                Groups.Remove(client.Id, room.Name).Wait();
             }
 
             // Tell the room the user left
@@ -548,7 +542,7 @@ namespace JabbR
             foreach (var client in user.ConnectedClients)
             {
                 // Add the caller to the group so they receive messages
-                GroupManager.AddToGroup(client.Id, room.Name).Wait();
+                Groups.Add(client.Id, room.Name).Wait();
             }
         }
 
@@ -717,7 +711,7 @@ namespace JabbR
                     Clients[client.Id].kick(room.Name);
 
                     // Remove the user from this the room group so he doesn't get the leave message
-                    GroupManager.RemoveFromGroup(client.Id, room.Name).Wait();
+                    Groups.Remove(client.Id, room.Name).Wait();
                 }
             }
 
@@ -762,6 +756,24 @@ namespace JabbR
         void INotificationService.ShowRooms()
         {
             Caller.showRooms(GetRooms());
+        }
+
+        void INotificationService.Invite(ChatUser user, ChatUser targetUser, ChatRoom targetRoom)
+        {
+            var transform = new TextTransform(_repository);
+            string roomLink = transform.ConvertHashtagsToRoomLinks("#" + targetRoom.Name);
+
+            // Send the invite message to the sendee
+            foreach (var client in targetUser.ConnectedClients)
+            {
+                Clients[client.Id].sendInvite(user.Name, targetUser.Name, roomLink);
+            }
+
+            // Send the invite notification to the sender
+            foreach (var client in user.ConnectedClients)
+            {
+                Clients[client.Id].sendInvite(user.Name, targetUser.Name, roomLink);
+            }
         }
 
         void INotificationService.NugeUser(ChatUser user, ChatUser targetUser)
@@ -863,6 +875,55 @@ namespace JabbR
             Clients[room.Name].changeTopic(roomViewModel);
         }
 
+        void INotificationService.AddAdmin(ChatUser targetUser)
+        {
+            foreach (var client in targetUser.ConnectedClients)
+            {
+                // Tell this client it's an owner
+                Clients[client.Id].makeAdmin();
+            }
+
+            var userViewModel = new UserViewModel(targetUser);
+            
+            // Tell all users in rooms to change the admin status
+            foreach (var room in targetUser.Rooms)
+            {
+                Clients[room.Name].addAdmin(userViewModel, room.Name);
+            }
+
+            // Tell the calling client the granting of admin status was successful
+            Caller.adminMade(targetUser.Name);
+        }
+
+        void INotificationService.RemoveAdmin(ChatUser targetUser)
+        {
+            foreach (var client in targetUser.ConnectedClients)
+            {
+                // Tell this client it's no longer an owner
+                Clients[client.Id].demoteAdmin();
+            }
+
+            var userViewModel = new UserViewModel(targetUser);
+
+            // Tell all users in rooms to change the admin status
+            foreach (var room in targetUser.Rooms)
+            {
+                Clients[room.Name].removeAdmin(userViewModel, room.Name);
+            }
+
+            // Tell the calling client the removal of admin status was successful
+            Caller.adminRemoved(targetUser.Name);
+        }
+
+        void INotificationService.BroadcastMessage(ChatUser user, string messageText)
+        {
+            // Tell all users in all rooms about this message
+            foreach (var room in _repository.Rooms)
+            {
+                Clients[room.Name].broadcastMessage(messageText, room.Name);
+            }
+        }
+
         private void OnRoomChanged(ChatRoom room)
         {
             var roomViewModel = new RoomViewModel
@@ -899,7 +960,8 @@ namespace JabbR
 
         private string GetCookieValue(string key)
         {
-            string value = Context.Cookies[key];
+            var cookie = Context.RequestCookies[key];
+            string value = cookie != null ? cookie.Value : null;
             return value != null ? HttpUtility.UrlDecode(value) : null;
         }
     }

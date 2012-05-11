@@ -58,8 +58,6 @@ namespace JabbR.Test
                 // TODO: find out why these don't work
                 //Assert.Equal(1, user.ConnectedClients.Count);
                 //Assert.Equal("1", user.ConnectedClients.First().Id);
-
-                chat.MockedConnection.Verify(m => m.Broadcast("Chat." + clientId, It.IsAny<object>()), Times.Once());
             }
 
             [Fact]
@@ -99,8 +97,6 @@ namespace JabbR.Test
                 Assert.Equal("1234", clientState["id"]);
                 Assert.Equal("John", clientState["name"]);
                 Assert.True(result);
-
-                chat.MockedConnection.Verify(m => m.Broadcast("Chat." + clientId, It.IsAny<object>()), Times.Once());
             }
         }
 
@@ -109,7 +105,7 @@ namespace JabbR.Test
             return GetTestableChat(clientId, clientState, user, new NameValueCollection());
         }
 
-        public static TestableChat GetTestableChat(string clientId, TrackingDictionary clientState, ChatUser user, NameValueCollection cookies)
+        public static TestableChat GetTestableChat(string connectionId, TrackingDictionary clientState, ChatUser user, NameValueCollection cookies)
         {
             // setup things needed for chat
             var repository = new InMemoryRepository();
@@ -128,17 +124,20 @@ namespace JabbR.Test
             var mockedConnectionObject = chat.MockedConnection.Object;
 
             // setup client agent
-            chat.Agent = new ClientAgent(mockedConnectionObject, "Chat");
-
-            var request = new Mock<IRequest>();
-            request.Setup(m => m.Cookies).Returns(cookies);
+            chat.Clients = new ClientAgent(mockedConnectionObject, "Chat");
 
             // setup signal agent
             var prinicipal = new Mock<IPrincipal>();
-            chat.Caller = new SignalAgent(mockedConnectionObject, clientId, "Chat", clientState);
+
+            var request = new Mock<IRequest>();
+            request.Setup(m => m.Cookies).Returns(new Cookies(cookies));
+            request.Setup(m => m.User).Returns(prinicipal.Object);
+
+
+            chat.Caller = new StatefulSignalAgent(mockedConnectionObject, connectionId, "Chat", clientState);
 
             // setup context
-            chat.Context = new HubContext(new HostContext(request.Object, null, prinicipal.Object), clientId);
+            chat.Context = new HubCallerContext(request.Object, connectionId);
 
             return chat;
         }
@@ -159,6 +158,31 @@ namespace JabbR.Test
                 MockSettings = mockSettings;
                 Repository = repository;
                 MockedConnection = connection;
+            }
+        }
+
+        private class Cookies : IRequestCookieCollection
+        {
+            private readonly NameValueCollection _nvc;
+            public Cookies(NameValueCollection nvc)
+            {
+                _nvc = nvc;
+            }
+
+            public int Count
+            {
+                get
+                {
+                    return _nvc.Count;
+                }
+            }
+
+            public Cookie this[string name]
+            {
+                get
+                {
+                    return new Cookie(name, _nvc[name]);
+                }
             }
         }
     }

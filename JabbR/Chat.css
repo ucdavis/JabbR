@@ -205,6 +205,10 @@
     vertical-align: middle;
 }
 
+.users .admin {
+    vertical-align: middle;
+}
+
 .note {
     display: inline-block;
     vertical-align: middle;
@@ -1398,4 +1402,8 @@ li.clearfix {
     #tabs {
         overflow: auto;
     }
+}
+
+#janrainEngageEmbed > div {
+    margin: 0 auto;
 }

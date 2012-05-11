@@ -210,6 +210,12 @@ namespace JabbR.Commands
 
                 return true;
             }
+            else if (commandName.Equals("invite", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleInvite(user, parts);
+
+                return true;
+            }
             else if (commandName.Equals("nudge", StringComparison.OrdinalIgnoreCase) && parts.Length == 2)
             {
                 HandleNudge(user, parts);
@@ -279,6 +285,24 @@ namespace JabbR.Commands
             else if (commandName.Equals("open", StringComparison.OrdinalIgnoreCase))
             {
                 HandleOpen(user, parts);
+
+                return true;
+            }
+            else if (commandName.Equals("addadmin", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleAddAdmin(user, parts);
+
+                return true;
+            }
+            else if (commandName.Equals("removeadmin", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleRemoveAdmin(user, parts);
+
+                return true;
+            }
+            else if (commandName.Equals("broadcast", StringComparison.OrdinalIgnoreCase))
+            {
+                HandleBroadcast(user, parts);
 
                 return true;
             }
@@ -588,7 +612,7 @@ namespace JabbR.Commands
 
             if (String.IsNullOrEmpty(messageText))
             {
-                throw new InvalidOperationException(String.Format("What did you want to say to '{0}'.", toUser.Name));
+                throw new InvalidOperationException(String.Format("What did you want to say to '{0}'?", toUser.Name));
             }
 
             HashSet<string> urls;
@@ -786,7 +810,7 @@ namespace JabbR.Commands
                     // Make sure the current user and target user are the same
                     if (user != targetUser)
                     {
-                        throw new InvalidOperationException("You can't set/change the password for a nickname you down own.");
+                        throw new InvalidOperationException("You can't set/change the password for a nickname you don't own.");
                     }
 
                     if (String.IsNullOrEmpty(newPassword))
@@ -813,6 +837,33 @@ namespace JabbR.Commands
 
             // Commit the changes
             _repository.CommitChanges();
+        }
+
+        private void HandleInvite(ChatUser user, string[] parts)
+        {
+            if (parts.Length == 1)
+            {
+                throw new InvalidOperationException("Who do you want to invite?");
+            }
+
+            string targetUserName = parts[1];
+
+            ChatUser targetUser = _repository.VerifyUser(targetUserName);
+
+            if (targetUser == user)
+            {
+                throw new InvalidOperationException("You can't invite yourself!");
+            }
+
+            if (parts.Length == 2)
+            {
+                throw new InvalidOperationException("Invite them to which room?");
+            }
+
+            string roomName = parts[2];
+            ChatRoom targetRoom = _repository.VerifyRoom(roomName);
+
+            _notificationService.Invite(user, targetUser, targetRoom);
         }
 
         private void HandleNudge(ChatUser user, string[] parts)
@@ -909,6 +960,65 @@ namespace JabbR.Commands
             _notificationService.ChangeFlag(user);
 
             _repository.CommitChanges();
+        }
+
+        private void HandleAddAdmin(ChatUser user, string[] parts)
+        {
+            if (parts.Length == 1)
+            {
+                throw new InvalidOperationException("Who do you want to make an admin?");
+            }
+
+            string targetUserName = parts[1];
+
+            ChatUser targetUser = _repository.VerifyUser(targetUserName);
+            
+            _chatService.AddAdmin(user, targetUser);
+
+            _notificationService.AddAdmin(targetUser);
+
+            _repository.CommitChanges();
+        }
+
+        private void HandleRemoveAdmin(ChatUser user, string[] parts)
+        {
+            if (parts.Length == 1)
+            {
+                throw new InvalidOperationException("Which admin do you want to remove?");
+            }
+
+            string targetUserName = parts[1];
+
+            ChatUser targetUser = _repository.VerifyUser(targetUserName);
+                        
+            _chatService.RemoveAdmin(user, targetUser);
+
+            _notificationService.RemoveAdmin(targetUser);
+
+            _repository.CommitChanges();
+        }
+
+        private void HandleBroadcast(ChatUser user, string[] parts)
+        {
+            if (!user.IsAdmin)
+            {
+                throw new InvalidOperationException("You are not an admin.");
+            }
+
+            string messageText = String.Join(" ", parts.Skip(1)).Trim();
+
+            if (String.IsNullOrEmpty(messageText))
+            {
+                throw new InvalidOperationException("What did you want to broadcast?");
+            }
+            
+            HashSet<string> urls;
+            var transform = new TextTransform(_repository);
+            messageText = transform.Parse(messageText);
+
+            messageText = TextTransform.TransformAndExtractUrls(messageText, out urls);
+
+            _notificationService.BroadcastMessage(user, messageText);
         }
     }
 }

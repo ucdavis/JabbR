@@ -17,6 +17,7 @@ namespace JabbR.Services
         void ListRooms(ChatUser user);
         void ListUsers(IEnumerable<ChatUser> users);
 
+        void Invite(ChatUser user, ChatUser targetUser, ChatRoom targetRoom);
         void NudgeRoom(ChatRoom room, ChatUser user);
         void NugeUser(ChatUser user, ChatUser targetUser);
 
@@ -48,5 +49,8 @@ namespace JabbR.Services
         void LockRoom(ChatUser targetUser, ChatRoom room);
         void CloseRoom(IEnumerable<ChatUser> users, ChatRoom room);
 
+        void AddAdmin(ChatUser targetUser);
+        void RemoveAdmin(ChatUser targetUser);
+        void BroadcastMessage(ChatUser user, string messageText);
     }
 }

@@ -12,7 +12,7 @@ namespace JabbR.Infrastructure
     public class TextTransform
     {
         private readonly IJabbrRepository _repository;
-        public const string HashTagPattern = @"(?:(?<=\s)|^)#([A-Za-z0-9-_.]{1,30}\w*)";
+        public const string HashTagPattern = @"(?:(?<=\s)|^)#([A-Za-z0-9-_]{1,30}\w*)";
 
         public TextTransform(IJabbrRepository repository)
         {
@@ -44,7 +44,7 @@ namespace JabbR.Infrastructure
 
         public static string TransformAndExtractUrls(string message, out HashSet<string> extractedUrls)
         {
-            const string urlPattern = @"(?i)(?<s>(?:https?|ftp)://|www\.)?(?:\S+(?::\S*)?@)?(?:(?:[\w\p{S}][\w\p{S}@-]*[.:])+\w+)(?(s)/?|/)(?:(?:[^\s()<>.,\u0022'”]+|[.,\u0022'”][^\s()<>.,\u0022]|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))*\))*)";
+            const string urlPattern = @"(?i)(?<s>(?:https?|ftp)://|www\.)?(?:\S+(?::\S*)?@)?(?:(?:[\w\p{S}][\w\p{S}@-]*[.:])+\w+)(?(s)/?|/)(?:(?:[^\s()<>.,\u0022'”]+|[.,\u0022'”][^\s()<>,\u0022]|\((?:[^\s()<>]+|(?:\([^\s()<>]+\)))*\))*)";
 
             var urls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             message = Regex.Replace(message, urlPattern, m =>
