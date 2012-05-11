@@ -22,6 +22,7 @@
     <link href="Content/KeyTips.css" rel="stylesheet" type="text/css" />
     <link href="Content/bootstrap.min.css" rel="stylesheet" type="text/css" />
     <link href="Content/emoji20.css" rel="stylesheet" type="text/css" />
+    <% if (!String.IsNullOrEmpty(googleAnalytics)) { %>
     <script type="text/javascript">
         var _gaq = _gaq || [];
         _gaq.push(['_setAccount', '<%:googleAnalytics %>']);
