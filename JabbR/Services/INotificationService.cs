@@ -26,6 +26,7 @@ namespace JabbR.Services
         void ChangeNote(ChatUser user);
         void ChangeFlag(ChatUser user);
         void ChangeTopic(ChatUser user, ChatRoom room);
+        void ChangeWelcome(ChatUser user, ChatRoom room);
 
         void PostNotification(ChatRoom room, ChatUser user, string message);
         void SendPrivateMessage(ChatUser user, ChatUser targetUser, string messageText);
@@ -44,7 +45,6 @@ namespace JabbR.Services
 
         void ShowUserInfo(ChatUser user);
         void ShowHelp();
-        void ShowRooms();
 
         void LockRoom(ChatUser targetUser, ChatRoom room);
         void CloseRoom(IEnumerable<ChatUser> users, ChatRoom room);
@@ -52,5 +52,6 @@ namespace JabbR.Services
         void AddAdmin(ChatUser targetUser);
         void RemoveAdmin(ChatUser targetUser);
         void BroadcastMessage(ChatUser user, string messageText);
+        void ForceUpdate();
     }
 }

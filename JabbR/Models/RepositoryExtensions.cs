@@ -25,7 +25,7 @@ namespace JabbR.Models
                    select r;
         }
 
-        public static ChatRoom VerifyUserRoom(this IJabbrRepository repository, ChatUser user, string roomName, bool includeUsers = false, bool includeOwners = false)
+        public static ChatRoom VerifyUserRoom(this IJabbrRepository repository, ICache cache, ChatUser user, string roomName)
         {
             if (String.IsNullOrEmpty(roomName))
             {
@@ -34,19 +34,32 @@ namespace JabbR.Models
 
             roomName = ChatService.NormalizeRoomName(roomName);
 
-            ChatRoom room = repository.GetRoomByName(roomName, includeUsers, includeOwners);
+            ChatRoom room = repository.GetRoomByName(roomName);
 
             if (room == null)
             {
                 throw new InvalidOperationException(String.Format("You're in '{0}' but it doesn't exist.", roomName));
             }
 
-            if (!room.Users.Any(u => u.Name.Equals(user.Name, StringComparison.OrdinalIgnoreCase)))
+            if (!repository.IsUserInRoom(cache, user, room))
             {
                 throw new InvalidOperationException(String.Format("You're not in '{0}'. Use '/join {0}' to join it.", roomName));
             }
 
             return room;
+        }
+
+        public static bool IsUserInRoom(this IJabbrRepository repository, ICache cache, ChatUser user, ChatRoom room)
+        {
+            bool? cached = cache.IsUserInRoom(user, room);
+
+            if (cached == null)
+            {
+                cached = repository.IsUserInRoom(user, room);
+                cache.SetUserInRoom(user, room, cached.Value);
+            }
+
+            return cached.Value;
         }
 
         public static ChatUser VerifyUserId(this IJabbrRepository repository, string userId)
@@ -62,7 +75,7 @@ namespace JabbR.Models
             return user;
         }
 
-        public static ChatRoom VerifyRoom(this IJabbrRepository repository, string roomName, bool mustBeOpen = true, bool includeUsers = false, bool includeOwners = false)
+        public static ChatRoom VerifyRoom(this IJabbrRepository repository, string roomName, bool mustBeOpen = true)
         {
             if (String.IsNullOrWhiteSpace(roomName))
             {
@@ -71,7 +84,7 @@ namespace JabbR.Models
 
             roomName = ChatService.NormalizeRoomName(roomName);
 
-            var room = repository.GetRoomByName(roomName, includeUsers, includeOwners);
+            var room = repository.GetRoomByName(roomName);
 
             if (room == null)
             {

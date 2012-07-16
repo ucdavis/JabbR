@@ -3,20 +3,26 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity.Migrations;
 using System.Linq;
+using System.Net.Http.Formatting;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Hosting;
+using System.Web.Http;
 using System.Web.Routing;
 using Elmah;
+using JabbR.Auth;
 using JabbR.ContentProviders.Core;
-using JabbR.Handlers;
+using JabbR.Infrastructure;
 using JabbR.Models;
 using JabbR.Services;
 using JabbR.ViewModels;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Ninject;
 using RouteMagic;
 using SignalR;
 using SignalR.Hosting.Common;
+using SignalR.Hubs;
 using SignalR.Ninject;
 
 [assembly: WebActivator.PostApplicationStartMethod(typeof(JabbR.App_Start.Bootstrapper), "PreAppStart")]
@@ -68,6 +74,26 @@ namespace JabbR.App_Start
                   .To<ApplicationSettings>()
                   .InSingletonScope();
 
+            kernel.Bind<IVirtualPathUtility>()
+                  .To<VirtualPathUtilityWrapper>();
+
+            kernel.Bind<IJavaScriptMinifier>()
+                  .To<AjaxMinMinifier>()
+                  .InSingletonScope();
+
+            kernel.Bind<ICache>()
+                  .To<AspNetCache>()
+                  .InSingletonScope();
+
+            var serializer = new JsonNetSerializer(new JsonSerializerSettings
+            {
+                DateFormatHandling = DateFormatHandling.MicrosoftDateFormat
+            });
+
+            kernel.Bind<IJsonSerializer>()
+                  .ToConstant(serializer);
+
+
             Kernel = kernel;
 
             var resolver = new NinjectDependencyResolver(kernel);
@@ -86,60 +112,46 @@ namespace JabbR.App_Start
 
             SetupErrorHandling();
 
-            SetupAdminUsers(kernel);
-
             ClearConnectedClients(repositoryFactory());
 
             SetupRoutes(kernel);
+            SetupWebApi(kernel);
         }
 
-        private static void SetupAdminUsers(IKernel kernel)
+        private static void SetupWebApi(IKernel kernel)
         {
-            var repository = kernel.Get<IJabbrRepository>();
-            var chatService = kernel.Get<IChatService>();
-            var settings = kernel.Get<IApplicationSettings>();
-
-            if (!repository.Users.Any(u => u.IsAdmin))
-            {
-                string defaultAdminUserName = settings.DefaultAdminUserName;
-                string defaultAdminPassword = settings.DefaultAdminPassword;
-
-                if (String.IsNullOrWhiteSpace(defaultAdminUserName) || String.IsNullOrWhiteSpace(defaultAdminPassword))
-                {
-                    throw new InvalidOperationException("You have not provided a default admin username and/or password");
-                }
-
-                ChatUser defaultAdmin = repository.GetUserByName(defaultAdminUserName);
-
-                if (defaultAdmin == null)
-                {
-                    defaultAdmin = chatService.AddUser(defaultAdminUserName, null, null, defaultAdminPassword);
-                }
-
-                defaultAdmin.IsAdmin = true;
-                repository.CommitChanges();
-            }
-            
+            GlobalConfiguration.Configuration.Formatters.Clear();
+            JsonMediaTypeFormatter jsonFormatter = new JsonMediaTypeFormatter();
+            jsonFormatter.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+            GlobalConfiguration.Configuration.Formatters.Add(jsonFormatter);
+            GlobalConfiguration.Configuration.DependencyResolver = new NinjectWebApiDependencyResolver(kernel);
         }
 
         private static void SetupRoutes(IKernel kernel)
         {
-            RouteTable.Routes.MapHttpHandler("Download", "api/v1/messages/{room}/{format}", 
-                                             new { format = "json" },
-                                             new { }, 
-                                             ctx => kernel.Get<MessagesHandler>());
+            RouteTable.Routes.MapHttpRoute(
+                name: "MessagesV1",
+                routeTemplate: "api/v1/{controller}/{room}"
+            );
+
+            RouteTable.Routes.MapHttpHandler<ProxyHandler>("proxy", "proxy/{*path}");
+
+            RouteTable.Routes.MapHttpRoute(
+                            name: "DefaultApi",
+                            routeTemplate: "api",
+                            defaults: new { controller = "ApiFrontPage" }
+                        );
+
         }
 
         private static void ClearConnectedClients(IJabbrRepository repository)
         {
             try
             {
-                foreach (var u in repository.Users)
+                var afkUsers = repository.Users.Online().Where(u => u.IsAfk);
+                foreach (var u in afkUsers)
                 {
-                    if (u.IsAfk)
-                    {
-                        u.Status = (int)UserStatus.Offline;
-                    }
+                    u.Status = (int)UserStatus.Offline;
                 }
 
                 repository.RemoveAllClients();
@@ -221,18 +233,16 @@ namespace JabbR.App_Start
             var clients = connectionManager.GetHubContext<Chat>().Clients;
             var inactiveUsers = new List<ChatUser>();
 
-            foreach (var user in repo.Users)
+            IQueryable<ChatUser> users = from u in repo.Users.Online()
+                                         where !u.IsAfk
+                                         select u;
+
+            foreach (var user in users)
             {
                 var status = (UserStatus)user.Status;
-                if (status == UserStatus.Offline)
-                {
-                    // Skip offline users
-                    continue;
-                }
-
                 var elapsed = DateTime.UtcNow - user.LastActivity;
 
-                if (!user.IsAfk && elapsed.TotalMinutes > 30)
+                if (elapsed.TotalMinutes > 30)
                 {
                     // After 30 minutes of inactivity make the user afk
                     user.IsAfk = true;
@@ -245,19 +255,22 @@ namespace JabbR.App_Start
                 }
             }
 
-            var roomGroups = from u in inactiveUsers
-                             from r in u.Rooms
-                             select new { User = u, Room = r } into tuple
-                             group tuple by tuple.Room into g
-                             select new
-                                        {
-                                            Room = g.Key,
-                                            Users = g.Select(t => new UserViewModel(t.User))
-                                        };
-
-            foreach (var roomGroup in roomGroups)
+            if (inactiveUsers.Count > 0)
             {
-                clients[roomGroup.Room.Name].markInactive(roomGroup.Users).Wait();
+                var roomGroups = from u in inactiveUsers
+                                 from r in u.Rooms
+                                 select new { User = u, Room = r } into tuple
+                                 group tuple by tuple.Room into g
+                                 select new
+                                 {
+                                     Room = g.Key,
+                                     Users = g.Select(t => new UserViewModel(t.User))
+                                 };
+
+                foreach (var roomGroup in roomGroups)
+                {
+                    clients[roomGroup.Room.Name].markInactive(roomGroup.Users).Wait();
+                }
             }
         }
     }

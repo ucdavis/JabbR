@@ -1,11 +1,7 @@
 [Oo]bj/
 [Bb]in/
 *.user
-/TestResults
-*.vspscc
-*.vssscc
-deploy
-deploy/*
+target/
 *.suo
 *.cache
 *.bak
@@ -14,3 +10,5 @@ msbuild.log
 _Re[Ss]harper*/
 _AzurePackage/
 *.ncrunchsolution
+JabbR*.css
+JabbR*.js

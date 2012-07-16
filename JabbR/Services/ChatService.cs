@@ -10,10 +10,12 @@ namespace JabbR.Services
     public class ChatService : IChatService
     {
         private readonly IJabbrRepository _repository;
+        private readonly ICache _cache;
         private readonly ICryptoService _crypto;
 
         private const int NoteMaximumLength = 140;
         private const int TopicMaximumLength = 80;
+        private const int WelcomeMaximumLength = 200;
 
         // Iso reference: http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
         private static readonly IDictionary<string, string> Countries = new Dictionary<string, string>
@@ -269,8 +271,9 @@ namespace JabbR.Services
                                                                                 {"zw", "Zimbabwe"}
                                                   };
 
-        public ChatService(IJabbrRepository repository, ICryptoService crypto)
+        public ChatService(ICache cache, IJabbrRepository repository, ICryptoService crypto)
         {
+            _cache = cache;
             _repository = repository;
             _crypto = crypto;
         }
@@ -449,11 +452,11 @@ namespace JabbR.Services
                 }
             }
 
-            // Add this room to the user's list of rooms
-            user.Rooms.Add(room);
+            // Add this user to the room
+            _repository.AddUserRoom(user, room);
 
-            // Add this user to the list of room's users
-            room.Users.Add(user);
+            // Clear the cache
+            _cache.RemoveUserInRoom(user, room);
         }
 
         public void SetInviteCode(ChatUser user, ChatRoom room, string inviteCode)
@@ -488,11 +491,11 @@ namespace JabbR.Services
 
         public void LeaveRoom(ChatUser user, ChatRoom room)
         {
-            // Remove the user from the room
-            room.Users.Remove(user);
+            // Update the cache
+            _cache.RemoveUserInRoom(user, room);
 
-            // Remove this room from the users' list
-            user.Rooms.Remove(room);
+            // Remove the user from this room
+            _repository.RemoveUserRoom(user, room);
         }
 
         public ChatMessage AddMessage(ChatUser user, ChatRoom room, string id, string content)
@@ -574,7 +577,7 @@ namespace JabbR.Services
                 throw new InvalidOperationException("Why would you want to kick yourself?");
             }
 
-            if (!IsUserInRoom(targetRoom, targetUser))
+            if (!_repository.IsUserInRoom(_cache, targetUser, targetRoom))
             {
                 throw new InvalidOperationException(String.Format("'{0}' isn't in '{1}'.", targetUser.Name, targetRoom.Name));
             }
@@ -680,11 +683,6 @@ namespace JabbR.Services
             throw new InvalidOperationException("A password is required.");
         }
 
-        internal static bool IsUserInRoom(ChatRoom room, ChatUser user)
-        {
-            return room.Users.Any(r => r.Name.Equals(user.Name, StringComparison.OrdinalIgnoreCase));
-        }
-
         private bool IsUserAllowed(ChatRoom room, ChatUser user)
         {
             return room.AllowedUsers.Contains(user) || user.IsAdmin;
@@ -710,7 +708,8 @@ namespace JabbR.Services
 
         private static void EnsureAdmin(ChatUser user)
         {
-            if (!user.IsAdmin) {
+            if (!user.IsAdmin)
+            {
                 throw new InvalidOperationException("You are not an admin");
             }
         }
@@ -892,6 +891,13 @@ namespace JabbR.Services
             _repository.CommitChanges();
         }
 
+        public void ChangeWelcome(ChatUser user, ChatRoom room, string newWelcome)
+        {
+            EnsureOwnerOrAdmin(user, room);
+            room.Welcome = newWelcome;
+            _repository.CommitChanges();
+        }
+
         public void AddAdmin(ChatUser admin, ChatUser targetUser)
         {
             // Ensure the user is admin
@@ -940,6 +946,11 @@ namespace JabbR.Services
         internal static void ValidateTopic(string topic)
         {
             ValidateNote(topic, noteTypeName: "topic", maxLength: TopicMaximumLength);
+        }
+
+        internal static void ValidateWelcome(string message)
+        {
+            ValidateNote(message, noteTypeName: "welcome", maxLength: WelcomeMaximumLength);
         }
 
         internal static void ValidateIsoCode(string isoCode)

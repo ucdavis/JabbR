@@ -102,14 +102,14 @@ namespace JabbR.Models
                 .AsQueryable();
         }
 
-        public IQueryable<ChatMessage> GetMessagesByRoom(string roomName)
+        public IQueryable<ChatMessage> GetMessagesByRoom(ChatRoom room)
         {
-            var room = GetRoomByName(roomName);
-            if (room == null)
-            {
-                return Enumerable.Empty<ChatMessage>().AsQueryable();
-            }
             return room.Messages.AsQueryable();
+        }
+
+        public IQueryable<ChatUser> GetOnlineUsers(ChatRoom room)
+        {
+            return room.Users.Online().AsQueryable();
         }
 
         public IQueryable<ChatUser> SearchUsers(string name)
@@ -158,6 +158,26 @@ namespace JabbR.Models
                     let message = r.Messages.FirstOrDefault(m => m.Id == id)
                     where message != null
                     select message).FirstOrDefault();
+        }
+
+        public bool IsUserInRoom(ChatUser user, ChatRoom room)
+        {
+            // REVIEW: Inefficient, bu only users for unit tests right now
+            return room.Users.Any(u => u.Name == user.Name);
+        }
+
+        public void AddUserRoom(ChatUser user, ChatRoom room)
+        {
+            user.Rooms.Add(room);
+
+            room.Users.Add(user);
+        }
+
+        public void RemoveUserRoom(ChatUser user, ChatRoom room)
+        {
+            user.Rooms.Remove(room);
+
+            room.Users.Remove(user);
         }
     }
 }

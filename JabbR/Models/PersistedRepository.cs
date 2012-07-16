@@ -1,4 +1,8 @@
-﻿using System.Data.Entity;
+﻿using System;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Data.Objects;
+using System.Data.Objects.DataClasses;
 using System.Linq;
 
 namespace JabbR.Models
@@ -6,6 +10,13 @@ namespace JabbR.Models
     public class PersistedRepository : IJabbrRepository
     {
         private readonly JabbrContext _db;
+
+        private static readonly Func<JabbrContext, string, ChatUser> getUserByName = (db, userName) => db.Users.FirstOrDefault(u => u.Name == userName);
+        private static readonly Func<JabbrContext, string, ChatUser> getUserById = (db, userId) => db.Users.FirstOrDefault(u => u.Id == userId);
+        private static readonly Func<JabbrContext, string, ChatUser> getUserByIdentity = (db, userIdentity) => db.Users.FirstOrDefault(u => u.Identity == userIdentity);
+        private static readonly Func<JabbrContext, string, ChatRoom> getRoomByName = (db, roomName) => db.Rooms.FirstOrDefault(r => r.Name == roomName);
+        private static readonly Func<JabbrContext, string, ChatClient> getClientById = (db, clientId) => db.Clients.FirstOrDefault(c => c.Id == clientId);
+        private static readonly Func<JabbrContext, string, ChatClient> getClientByIdWithUser = (db, clientId) => db.Clients.Include(c => c.User).FirstOrDefault(u => u.Id == clientId);
 
         public PersistedRepository(JabbrContext db)
         {
@@ -63,41 +74,17 @@ namespace JabbR.Models
 
         public ChatUser GetUserById(string userId)
         {
-            return _db.Users.FirstOrDefault(u => u.Id == userId);
+            return getUserById(_db, userId);
         }
 
         public ChatUser GetUserByName(string userName)
         {
-            return _db.Users.FirstOrDefault(u => u.Name == userName);
+            return getUserByName(_db, userName);
         }
 
         public ChatRoom GetRoomByName(string roomName)
         {
-            return _db.Rooms.Include(r => r.Owners)
-                            .Include(r => r.Users)
-                            .FirstOrDefault(r => r.Name == roomName);
-        }
-
-        public ChatRoom GetRoomByName(string roomName, bool includeUsers = false, bool includeOwners = false)
-        {
-            IQueryable<ChatRoom> rooms = _db.Rooms;
-            if (includeUsers)
-            {
-                rooms = rooms.Include(r => r.Users);
-            }
-
-            if (includeOwners)
-            {
-                rooms = rooms.Include(r => r.Owners);
-            }
-
-
-            return rooms.FirstOrDefault(r => r.Name == roomName);
-        }
-
-        public ChatRoom GetRoomAndUsersByName(string roomName)
-        {
-            return _db.Rooms.Include(r => r.Users).FirstOrDefault(r => r.Name == roomName);
+            return getRoomByName(_db, roomName);
         }
 
         public ChatMessage GetMessagesById(string id)
@@ -114,9 +101,14 @@ namespace JabbR.Models
                        (r.Private && !r.Closed && r.AllowedUsers.Any(u => u.Key == user.Key)));
         }
 
-        public IQueryable<ChatMessage> GetMessagesByRoom(string roomName)
+        private IQueryable<ChatMessage> GetMessagesByRoom(string roomName)
         {
             return _db.Messages.Include(r => r.Room).Where(r => r.Room.Name == roomName);
+        }
+
+        public IQueryable<ChatMessage> GetMessagesByRoom(ChatRoom room)
+        {
+            return _db.Messages.Include(r => r.User).Where(r => r.RoomKey == room.Key);
         }
 
         public IQueryable<ChatMessage> GetPreviousMessages(string messageId)
@@ -134,9 +126,50 @@ namespace JabbR.Models
                    select m;
         }
 
+        public IQueryable<ChatUser> GetOnlineUsers(ChatRoom room)
+        {
+            return _db.Entry(room)
+                      .Collection(r => r.Users)
+                      .Query()
+                      .Online();
+        }
+
         public IQueryable<ChatUser> SearchUsers(string name)
         {
             return _db.Users.Online().Where(u => u.Name.Contains(name));
+        }
+
+        public void AddUserRoom(ChatUser user, ChatRoom room)
+        {
+            RunNonLazy(() => room.Users.Add(user));
+        }
+
+        public void RemoveUserRoom(ChatUser user, ChatRoom room)
+        {
+            RunNonLazy(() =>
+            {
+                // The hack from hell to attach the user to room.Users so delete is tracked
+                ObjectContext context = ((IObjectContextAdapter)_db).ObjectContext;
+                RelationshipManager manger = context.ObjectStateManager.GetRelationshipManager(room);
+                IRelatedEnd end = manger.GetRelatedEnd("JabbR.Models.ChatRoom_Users", "ChatRoom_Users_Target");
+                end.Attach(user);
+
+                room.Users.Remove(user);
+            });
+        }
+
+        private void RunNonLazy(Action action)
+        {
+            bool old = _db.Configuration.LazyLoadingEnabled;
+            try
+            {
+                _db.Configuration.LazyLoadingEnabled = false;
+                action();
+            }
+            finally
+            {
+                _db.Configuration.LazyLoadingEnabled = old;
+            }
         }
 
         public void Add(ChatClient client)
@@ -163,19 +196,17 @@ namespace JabbR.Models
 
         public ChatUser GetUserByIdentity(string userIdentity)
         {
-            return _db.Users.FirstOrDefault(u => u.Identity == userIdentity);
+            return getUserByIdentity(_db, userIdentity);
         }
 
         public ChatClient GetClientById(string clientId, bool includeUser = false)
         {
-            IQueryable<ChatClient> clients = _db.Clients;
-
             if (includeUser)
             {
-                clients = clients.Include(c => c.User);
+                return getClientByIdWithUser(_db, clientId);
             }
 
-            return clients.FirstOrDefault(c => c.Id == clientId);
+            return getClientById(_db, clientId);
         }
 
         public void RemoveAllClients()
@@ -184,6 +215,16 @@ namespace JabbR.Models
             {
                 _db.Clients.Remove(c);
             }
+        }
+
+        public bool IsUserInRoom(ChatUser user, ChatRoom room)
+        {
+            return _db.Entry(user)
+                      .Collection(r => r.Rooms)
+                      .Query()
+                      .Where(r => r.Key == room.Key)
+                      .Select(r => r.Name)
+                      .FirstOrDefault() != null;
         }
     }
 }

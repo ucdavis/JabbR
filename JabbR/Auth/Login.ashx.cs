@@ -65,6 +65,7 @@ namespace JabbR.Auth
 
             // Try to get the user by identity
             ChatUser user = repository.GetUserByIdentity(userIdentity);
+            string hash = context.Request.QueryString["hash"];
 
             // No user with this identity
             if (user == null)
@@ -78,12 +79,13 @@ namespace JabbR.Auth
                     // If they are logged in then assocate the identity
                     user.Identity = userIdentity;
                     user.Email = email;
-                    if (!String.IsNullOrEmpty(email))
+                    if (!String.IsNullOrEmpty(email) && 
+                        String.IsNullOrEmpty(user.Hash))
                     {
                         user.Hash = email.ToMD5();
                     }
                     repository.CommitChanges();
-                    context.Response.Redirect("~/", false);
+                    context.Response.Redirect(GetUrl(hash), false);
                     context.ApplicationInstance.CompleteRequest();
                     return;
                 }
@@ -99,7 +101,8 @@ namespace JabbR.Auth
             {
                 // Update email and gravatar
                 user.Email = email;
-                if (!String.IsNullOrEmpty(email))
+                if (!String.IsNullOrEmpty(email) &&
+                    String.IsNullOrEmpty(user.Hash))
                 {
                     user.Hash = email.ToMD5();
                 }
@@ -111,8 +114,13 @@ namespace JabbR.Auth
             var cookie = new HttpCookie("jabbr.state", state);
             cookie.Expires = DateTime.Now.AddDays(30);
             context.Response.Cookies.Add(cookie);
-            context.Response.Redirect("~/", false);
+            context.Response.Redirect(GetUrl(hash), false);
             context.ApplicationInstance.CompleteRequest();
+        }
+
+        private string GetUrl(string hash)
+        {
+            return HttpRuntime.AppDomainAppVirtualPath + hash;
         }
 
         private string FixUserName(string username) {

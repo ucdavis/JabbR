@@ -26,7 +26,7 @@ namespace JabbR.ContentProviders
         /// </summary>
         private static readonly string tweetScript = String.Format( // Be aware: Nested string.format placeholder!
             "<div class=\"tweet_{{0}}\"><script src=\"{0}\"></script></div>",
-            HttpUtility.HtmlEncode("http://api.twitter.com/1/statuses/show/{0}.json?include_entities=false&callback=addTweet")
+            HttpUtility.HtmlEncode("https://api.twitter.com/1/statuses/show/{0}.json?include_entities=false&callback=addTweet")
         );
 
         protected override Task<ContentProviderResult> GetCollapsibleContent(ContentProviderHttpRequest request)
@@ -56,7 +56,9 @@ namespace JabbR.ContentProviders
         public override bool IsValidContent(Uri uri)
         {
             return uri.AbsoluteUri.StartsWith("http://twitter.com/", StringComparison.OrdinalIgnoreCase)
-                || uri.AbsoluteUri.StartsWith("https://twitter.com/", StringComparison.OrdinalIgnoreCase);
+                || uri.AbsoluteUri.StartsWith("https://twitter.com/", StringComparison.OrdinalIgnoreCase)
+                || uri.AbsoluteUri.StartsWith("http://www.twitter.com/", StringComparison.OrdinalIgnoreCase)
+                || uri.AbsoluteUri.StartsWith("https://www.twitter.com/", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

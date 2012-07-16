@@ -1,11 +1,13 @@
 ﻿param(
   $authKey                            = $env:JABBR_AUTH_KEY,
+  $appId                              = $env:JABBR_APP_ID,
   $googleAnalyticsToken               = $env:JABBR_GOOGLE_ANALYTICS,
   $remoteDesktopAccountExpiration     = $env:JABBR_REMOTE_DESKTOP_ACCOUNT_EXPIRATION,
   $remoteDesktopCertificateThumbprint = $env:JABBR_REMOTE_DESKTOP_CERTIFICATE_THUMBPRINT,
   $remoteDesktopEnctyptedPassword     = $env:JABBR_REMOTE_DESKTOP_ENCRYPTED_PASSWORD,
   $remoteDesktopUsername              = $env:JABBR_REMOTE_DESKTOP_USERNAME,
   $sqlAzureConnectionString           = $env:JABBR_SQL_AZURE_CONNECTION_STRING,
+  $sslCertificateThumbprint           = $env:JABBR_SSL_CERTIFICATE_THUMBPRINT,
   $commitSha,
   $commitBranch
 )
@@ -16,6 +18,7 @@ $ScriptRoot = (Split-Path -parent $MyInvocation.MyCommand.Definition)
 
 # Validate Sutff
 require-param -value $authKey -paramName "authKey"
+require-param -value $appId -paramName "appId"
 require-param -value $remoteDesktopAccountExpiration -paramName "remoteDesktopAccountExpiration"
 require-param -value $remoteDesktopCertificateThumbprint -paramName "remoteDesktopCertificateThumbprint"
 require-param -value $remoteDesktopEnctyptedPassword -paramName "remoteDesktopEnctyptedPassword"
@@ -115,6 +118,7 @@ cp $webConfigPath $webConfigBakPath
 cp $cscfgPath $cscfgBakPath
 
 set-appsetting -path $webConfigPath -name "auth.apiKey" -value $authKey
+set-appsetting -path $webConfigPath -name "auth.appId" -value $appId
 set-appsetting -path $webConfigPath -name "googleAnalytics" -value $googleAnalyticsToken
 set-configurationsetting -path $cscfgPath -name "Microsoft.WindowsAzure.Plugins.RemoteAccess.AccountExpiration" -value $remoteDesktopAccountExpiration
 set-certificatethumbprint -path $cscfgPath -name "Microsoft.WindowsAzure.Plugins.RemoteAccess.PasswordEncryption" -value $remoteDesktopCertificateThumbprint
@@ -123,6 +127,10 @@ set-configurationsetting -path $cscfgPath -name "Microsoft.WindowsAzure.Plugins.
 set-connectionstring -path $webConfigPath -name "JabbR" -value $sqlAzureConnectionString
 set-releasemode $webConfigPath
 set-machinekey $webConfigPath
+
+if($sslCertificateThumbprint) {
+  set-certificatethumbprint -path $cscfgPath -name "jabbr" -value $sslCertificateThumbprint
+}
 
 & 'C:\Program Files\Windows Azure SDK\v1.6\bin\cspack.exe' "$csdefFile" /out:"$cspkgFile" /role:"Website;$websitePath" /sites:"Website;Web;$websitePath" /rolePropertiesFile:"Website;$rolePropertiesPath"
 

@@ -32,7 +32,8 @@
         $window = $(window),
         $document = $(document),
         $roomFilterInput = null,
-        updateTimeout = 15000;
+        updateTimeout = 15000,
+        $richness = null;
 
     function getRoomId(roomName) {
         return escape(roomName.toLowerCase()).replace(/[^a-z0-9]/, '_');
@@ -55,7 +56,7 @@
         this.messages = $messages;
         this.roomTopic = $roomTopic;
 
-        function glowTab() {
+        function glowTab(n) {
             // Stop if we're not unread anymore
             if (!$tab.hasClass('unread')) {
                 return;
@@ -68,11 +69,20 @@
                     return;
                 }
 
-                // Go dark
-                $tab.animate({ backgroundColor: '#164C85', color: '#ffffff' }, 800, function () {
-                    // Glow the tab again
-                    glowTab();
-                });
+                n--;
+
+                // Check if we're on our last glow
+                if (n !== 0) {
+                    // Go dark
+                    $tab.animate({ backgroundColor: '#164C85', color: '#ffffff' }, 800, function () {
+                        // Glow the tab again
+                        glowTab(n);
+                    });
+                }
+                else {
+                    // Leave the tab highlighted
+                    $tab.animate({ backgroundColor: '#043C4C', color: '#ffffff' }, 800);
+                }
             });
         }
 
@@ -138,7 +148,7 @@
             if (!this.isActive() && unread === 1) {
                 // If this room isn't active then we're going to glow the tab
                 // to get the user's attention
-                glowTab();
+                glowTab(6);
             }
         };
 
@@ -506,12 +516,34 @@
         $.history.load('/rooms/' + roomName);
     }
 
-    function processMessage(message) {
-        var isFromCollapibleContentProvider = message.message.indexOf('class="collapsible_box"') > -1;
+    function processMessage(message, roomName) {
+        var isFromCollapibleContentProvider = isFromCollapsibleContentProvider(message.message),
+            collapseContent = shouldCollapseContent(message.message, roomName);
+
         message.message = isFromCollapibleContentProvider ? message.message : utility.parseEmojis(message.message);
         message.trimmedName = utility.trim(message.name, 21);
         message.when = message.date.formatTime(true);
         message.fulldate = message.date.toLocaleString();
+
+        if (collapseContent) {
+            message.message = collapseRichContent(message.message);
+        }
+    }
+
+    function isFromCollapsibleContentProvider(content) {
+        return content.indexOf('class="collapsible_box') > -1; // leaving off trailing " purposefully
+    }
+
+    function shouldCollapseContent(content, roomName) {
+        var collapsible = isFromCollapsibleContentProvider(content),
+            collapseForRoom = roomName ? getRoomPreference(roomName, 'blockRichness') : getActiveRoomPreference('blockRichness');
+
+        return collapsible && collapseForRoom;
+    }
+
+    function collapseRichContent(content) {
+        content = content.replace(/class="collapsible_box/g, 'style="display: none;" class="collapsible_box');
+        return content.replace(/class="collapsible_title"/g, 'class="collapsible_title" title="Content collapsed because you have Rich-Content disabled"');
     }
 
     function triggerFocus() {
@@ -540,6 +572,7 @@
         // Placeholder for room level preferences
         toggleElement($sound, 'hasSound', roomName);
         toggleElement($toast, 'canToast', roomName);
+        toggleElement($richness, 'blockRichness', roomName);
     }
 
     function setPreference(name, value) {
@@ -656,14 +689,21 @@
         var room = getRoomElements(roomViewModel.Name);
         var topic = roomViewModel.Topic;
         var topicHtml = topic === '' ? 'You\'re chatting in ' + roomViewModel.Name : '<strong>Topic: </strong>' + topic;
-        room.roomTopic.html(topicHtml);
+        var roomTopic = room.roomTopic;
+        var isVisibleRoom = getCurrentRoomElements().getName() === roomViewModel.Name;
+        if (isVisibleRoom) {
+            roomTopic.hide();
+        }
+        roomTopic.html(topicHtml);
+        if (isVisibleRoom) {
+            roomTopic.fadeIn(2000);
+        }
     }
 
     // Rotating Tips.
     var messages = [
                 'Type @ then press TAB to auto-complete nicknames',
                 'Type /help to see the list of commands',
-                'Type /rooms to list all available rooms',
                 'Type : then press TAB to auto-complete emoji icons',
                 'You can create your own private rooms. Type /help for more info'
             ];
@@ -712,6 +752,7 @@
             $newMessage = $('#new-message');
             $toast = $('#preferences .toast');
             $sound = $('#preferences .sound');
+            $richness = $('#preferences .richness');
             $downloadIcon = $('#preferences .download');
             $downloadDialog = $('#download-dialog');
             $downloadDialogButton = $('#download-dialog-button');
@@ -734,7 +775,8 @@
                 $toast.show();
             }
             else {
-                $downloadIcon.css({ left: '26px' });
+                $richness.css({ left: '26px' });
+                $downloadIcon.css({ left: '62px' });
                 // We need to set the toast setting to false
                 preferences.canToast = false;
             }
@@ -804,6 +846,38 @@
 
                 // Store the preference
                 setRoomPreference(room.getName(), 'hasSound', enabled);
+            });
+
+            $richness.click(function () {
+                var room = getCurrentRoomElements(),
+                    $richContentMessages = room.messages.find('h3.collapsible_title');
+
+                if (room.isLobby()) {
+                    return;
+                }
+
+                $(this).toggleClass('off');
+
+                var enabled = !$(this).hasClass('off');
+
+                // Store the preference
+                setRoomPreference(room.getName(), 'blockRichness', enabled);
+
+                // toggle all rich-content for current room
+                $richContentMessages.each(function (index) {
+                    var $this = $(this),
+                        isCurrentlyVisible = $this.next().is(":visible");
+
+                    if (enabled) {
+                        $this.attr('title', 'Content collapsed because you have Rich-Content disabled');
+                    } else {
+                        $this.removeAttr('title');
+                    }
+
+                    if (!(isCurrentlyVisible ^ enabled)) {
+                        $this.trigger('click');
+                    }
+                });
             });
 
             $toast.click(function () {
@@ -925,16 +999,16 @@
                             // exclude current username from autocomplete
                             return room.users.find('li[data-name != "' + ui.getUserName() + '"]')
                                          .not('.room')
-                                         .map(function () { return ($(this).data('name') || "").toString(); });
+                                         .map(function () { return ($(this).data('name') + ' ' || "").toString(); });
                         case '#':
                             var lobby = getLobby();
                             return lobby.users.find('li')
-                                         .map(function () { return $(this).data('name'); });
+                                         .map(function () { return $(this).data('name') + ' '; });
 
                         case '/':
                             var commands = ui.getCommands();
                             return ui.getCommands()
-                                         .map(function (cmd) { return cmd.Name; });
+                                         .map(function (cmd) { return cmd.Name + ' '; });
 
                         case ':':
                             return Emoji.getIcons();
@@ -1181,7 +1255,7 @@
         changeGravatar: function (user, roomName) {
             var room = getRoomElements(roomName),
                 $user = room.getUserReferences(user.Name),
-                src = 'http://www.gravatar.com/avatar/' + user.Hash + '?s=16&d=mm';
+                src = 'https://secure.gravatar.com/avatar/' + user.Hash + '?s=16&d=mm';
 
             $user.find('.gravatar')
                  .attr('src', src);
@@ -1226,7 +1300,8 @@
                 $target = $messages.children().first(),
                 $previousMessage = null,
                 $current = null,
-                previousUser = null;
+                previousUser = null,
+                previousTimestamp = new Date();
 
             if (messages.length === 0) {
                 // Mark this list as full
@@ -1236,10 +1311,16 @@
 
             // Populate the old messages
             $.each(messages, function (index) {
-                processMessage(this);
+                processMessage(this, roomName);
 
                 if ($previousMessage) {
                     previousUser = $previousMessage.data('name');
+                    previousTimestamp = new Date($previousMessage.data('timestamp') || new Date());
+                }
+
+                if (this.date.toDate().diffDays(previousTimestamp.toDate())) {
+                    ui.addMessageBeforeTarget(this.date.toLocaleDateString(), 'list-header', $target)
+                      .find('.right').remove(); // remove timestamp on date indicator
                 }
 
                 // Determine if we need to show the user
@@ -1276,7 +1357,7 @@
             showUserName = previousUser !== message.name;
             message.showUser = showUserName;
 
-            processMessage(message);
+            processMessage(message, roomName);
 
             if (showUserName === false) {
                 $previousMessage.addClass('continue');
@@ -1331,6 +1412,10 @@
         addChatMessageContent: function (id, content, roomName) {
             var $message = $('#m-' + id);
 
+            if (shouldCollapseContent(content, roomName)) {
+                content = collapseRichContent(content);
+            }
+
             $message.find('.middle')
                     .append(content);
         },
@@ -1342,11 +1427,8 @@
                 }
             }
         },
-        addMessage: function (content, type, roomName) {
-            var room = roomName ? getRoomElements(roomName) : getCurrentRoomElements(),
-                nearEnd = room.isNearTheEnd(),
-                $element = null,
-                now = new Date(),
+        prepareNotificationMessage: function (content, type) {
+            var now = new Date(),
                 message = {
                     message: utility.parseEmojis(content),
                     type: type,
@@ -1355,7 +1437,24 @@
                     fulldate: now.toLocaleString()
                 };
 
-            $element = templates.notification.tmpl(message).appendTo(room.messages);
+            return templates.notification.tmpl(message);
+        },
+        addMessageBeforeTarget: function (content, type, $target) {
+            var $element = null;
+
+            $element = ui.prepareNotificationMessage(content, type);
+
+            $target.before($element);
+
+            return $element;
+        },
+        addMessage: function (content, type, roomName) {
+            var room = roomName ? getRoomElements(roomName) : getCurrentRoomElements(),
+                nearEnd = room.isNearTheEnd(),
+                $element = null;
+
+            $element = ui.prepareNotificationMessage(content, type)
+                         .appendTo(room.messages);
 
             if (type === 'notification' && room.isLobby() === false) {
                 ui.collapseNotifications($element);
@@ -1515,7 +1614,9 @@
                  .find('.admin')
                  .text('');
             room.updateUserStatus($user);
-        }
+        },
+        shouldCollapseContent: shouldCollapseContent,
+        collapseRichContent: collapseRichContent
     };
 
     if (!window.chat) {

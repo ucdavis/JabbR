@@ -21,6 +21,10 @@
     </FileUpgradeFlags>
     <OldToolsVersion>4.0</OldToolsVersion>
     <UpgradeBackupLocation />
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -41,16 +45,27 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AjaxMin, Version=4.51.4507.18296, Culture=neutral, PublicKeyToken=21ef50ce11b5d80f, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\AjaxMin.4.51.4507.18296\lib\net20\AjaxMin.dll</HintPath>
+    </Reference>
     <Reference Include="AntiXSSLibrary, Version=4.0.0.0, Culture=neutral, PublicKeyToken=d127efab8a9c114f, processorArchitecture=MSIL">
       <HintPath>..\packages\AntiXSS.4.0.1\lib\net35\AntiXSSLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="dotless.Core, Version=1.3.0.3, Culture=neutral, PublicKeyToken=96b446c9e63eae34, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\dotless.1.3.0.3\lib\dotless.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="EcmaScript.NET.modified">
+      <HintPath>..\packages\YUICompressor.NET.1.7.1.0\lib\net35\EcmaScript.NET.modified.dll</HintPath>
     </Reference>
     <Reference Include="Elmah, Version=1.2.14318.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\elmah.corelibrary.1.2.1\lib\Elmah.dll</HintPath>
     </Reference>
-    <Reference Include="EntityFramework, Version=4.3.1.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+    <Reference Include="EntityFramework, Version=4.4.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\EntityFramework.4.3.1\lib\net40\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.5.0.0-rc\lib\net40\EntityFramework.dll</HintPath>
     </Reference>
     <Reference Include="HtmlAgilityPack">
       <HintPath>..\packages\HtmlAgilityPack.1.4.3\lib\HtmlAgilityPack.dll</HintPath>
@@ -58,14 +73,16 @@
     <Reference Include="HtmlSanitizationLibrary, Version=4.0.0.0, Culture=neutral, PublicKeyToken=d127efab8a9c114f, processorArchitecture=MSIL">
       <HintPath>..\packages\AntiXSS.4.0.1\lib\net35\HtmlSanitizationLibrary.dll</HintPath>
     </Reference>
+    <Reference Include="Jurassic">
+      <HintPath>..\packages\Jurassic.2.1.1\lib\Jurassic.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <Private>True</Private>
       <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Newtonsoft.Json.4.5.5\lib\net40\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.4.5.7\lib\net40\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Ninject, Version=2.2.0.0, Culture=neutral, PublicKeyToken=c7192dc5380945e7, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -74,26 +91,35 @@
     <Reference Include="RouteMagic">
       <HintPath>..\packages\RouteMagic.1.2\lib\net40\RouteMagic.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SignalR.Server.0.5.0\lib\net40\SignalR.dll</HintPath>
+    <Reference Include="SignalR">
+      <HintPath>..\packages\SignalR.Server.0.5.2\lib\net40\SignalR.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR.Hosting.AspNet, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SignalR.Hosting.AspNet.0.5.0\lib\net40\SignalR.Hosting.AspNet.dll</HintPath>
+    <Reference Include="SignalR.Hosting.AspNet">
+      <HintPath>..\packages\SignalR.Hosting.AspNet.0.5.2\lib\net40\SignalR.Hosting.AspNet.dll</HintPath>
     </Reference>
-    <Reference Include="SignalR.Hosting.Common, Version=0.5.96.10509, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\SignalR.Hosting.Common.0.5.0\lib\net40\SignalR.Hosting.Common.dll</HintPath>
+    <Reference Include="SignalR.Hosting.Common">
+      <HintPath>..\packages\SignalR.Hosting.Common.0.5.2\lib\net40\SignalR.Hosting.Common.dll</HintPath>
     </Reference>
     <Reference Include="SignalR.Ninject, Version=0.5.0.10509, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\SignalR.Ninject.0.5.0\lib\net40\SignalR.Ninject.dll</HintPath>
     </Reference>
+    <Reference Include="SquishIt.Framework">
+      <HintPath>..\packages\SquishIt.0.8.6\lib\SquishIt.Framework.dll</HintPath>
+    </Reference>
     <Reference Include="System.ComponentModel.Composition" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Data.Services.Client" />
+    <Reference Include="System.Net.Http">
+      <HintPath>..\packages\Microsoft.Net.Http.2.0.20515.0\lib\net40\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Formatting">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.4.0.20515.0\lib\net40\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.WebRequest">
+      <HintPath>..\packages\Microsoft.Net.Http.2.0.20515.0\lib\net40\System.Net.Http.WebRequest.dll</HintPath>
+    </Reference>
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
     <Reference Include="System.Web.DynamicData" />
@@ -104,6 +130,12 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Http">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.4.0.20515.0\lib\net40\System.Web.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http.WebHost">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.WebHost.4.0.20515.0\lib\net40\System.Web.Http.WebHost.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
@@ -114,6 +146,9 @@
     <Reference Include="WebActivator, Version=1.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\WebActivator.1.5\lib\net40\WebActivator.dll</HintPath>
+    </Reference>
+    <Reference Include="Yahoo.Yui.Compressor">
+      <HintPath>..\packages\YUICompressor.NET.1.7.1.0\lib\net35\Yahoo.Yui.Compressor.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -127,6 +162,9 @@
     <Content Include="Chat.twitter.js" />
     <Content Include="Chat.ui.js" />
     <Content Include="Chat.utility.js" />
+    <Content Include="Content\bootstrap-responsive.css" />
+    <Content Include="Content\bootstrap-responsive.min.css" />
+    <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\emoji20.css" />
     <Content Include="Content\images\ajax-loader.png" />
@@ -636,6 +674,8 @@
     <Content Include="Content\images\emojis\zzz.png" />
     <Content Include="Content\images\error.png" />
     <Content Include="Content\images\flags.png" />
+    <Content Include="Content\images\glyphicons-halflings-white.png" />
+    <Content Include="Content\images\glyphicons-halflings.png" />
     <Content Include="Content\images\loading.gif" />
     <Content Include="Content\images\lockwhite.png" />
     <Content Include="Content\images\icons-18-black.png" />
@@ -643,6 +683,8 @@
     <Content Include="Content\images\icons-36-black.png" />
     <Content Include="Content\images\icons-36-white.png" />
     <Content Include="Content\images\lock.png" />
+    <Content Include="Content\images\richness-off.png" />
+    <Content Include="Content\images\richness-on.png" />
     <Content Include="Content\images\toast-off.png" />
     <Content Include="Content\images\toast-on.png" />
     <Content Include="Content\images\pop-in-icon.png" />
@@ -727,6 +769,7 @@
     <Content Include="Mobile.css" />
     <Content Include="mobile.htm" />
     <Content Include="Content\sounds\notification.wav" />
+    <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
     <Content Include="robots.txt" />
     <Content Include="Scripts\jquery.history.js" />
@@ -744,8 +787,8 @@
     <Content Include="Scripts\jquery.livesearch.js" />
     <Content Include="Scripts\jquery.mobile-1.0rc2.js" />
     <Content Include="Scripts\jquery.mobile-1.0rc2.min.js" />
-    <Content Include="Scripts\jquery.signalR-0.5.0.js" />
-    <Content Include="Scripts\jquery.signalR-0.5.0.min.js" />
+    <Content Include="Scripts\jquery.signalR-0.5.2.js" />
+    <Content Include="Scripts\jquery.signalR-0.5.2.min.js" />
     <Content Include="Scripts\jquery.sortElements.js" />
     <Content Include="Scripts\jquery.timeago.0.10.js" />
     <Content Include="Scripts\jQuery.tmpl.js" />
@@ -772,6 +815,22 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Commands\WelcomeCommand.cs" />
+    <Compile Include="Commands\UpdateCommand.cs" />
+    <Compile Include="ContentProviders\SpotifyContentProvider.cs" />
+    <Compile Include="Migrations\201206201924146_RoomWelcome.cs" />
+    <Compile Include="Migrations\201206201924146_RoomWelcome.Designer.cs">
+      <DependentUpon>201206201924146_RoomWelcome.cs</DependentUpon>
+    </Compile>
+    <Compile Include="WebApi\Model\ErrorModel.cs" />
+    <Compile Include="Infrastructure\HttpRequestExtensions.cs" />
+    <Compile Include="WebApi\MessagesController.cs" />
+    <Compile Include="WebApi\Model\MessageApiModel.cs" />
+    <Compile Include="WebApi\Model\ApiFrontpageModel.cs" />
+    <Compile Include="WebApi\ApiFrontPageController.cs" />
+    <Compile Include="WebApi\Model\AuthApiModel.cs" />
+    <Compile Include="Infrastructure\IVirtualPathUtility.cs" />
+    <Compile Include="Infrastructure\VirtualPathUtilityWrapper.cs" />
     <Compile Include="App_Start\Bootstrapper.cs" />
     <Compile Include="Auth\CasHelper.cs" />
     <Compile Include="Auth\CasLogin.ashx.cs">
@@ -783,7 +842,44 @@
     <Compile Include="Auth\Login.ashx.cs">
       <DependentUpon>Login.ashx</DependentUpon>
     </Compile>
+    <Compile Include="Commands\AddAdminCommand.cs" />
+    <Compile Include="Commands\AddOwnerCommand.cs" />
+    <Compile Include="Commands\AdminCommand.cs" />
+    <Compile Include="Commands\AfkCommand.cs" />
+    <Compile Include="Commands\AllowCommand.cs" />
+    <Compile Include="Commands\BroadcastCommand.cs" />
+    <Compile Include="Commands\CallerContext.cs" />
+    <Compile Include="Commands\CloseCommand.cs" />
+    <Compile Include="Commands\CommandAttribute.cs" />
+    <Compile Include="Commands\CommandContext.cs" />
     <Compile Include="Commands\CommandManager.cs" />
+    <Compile Include="Commands\CreateCommand.cs" />
+    <Compile Include="Commands\FlagCommand.cs" />
+    <Compile Include="Commands\GravatarCommand.cs" />
+    <Compile Include="Commands\HelpCommand.cs" />
+    <Compile Include="Commands\ICommand.cs" />
+    <Compile Include="Commands\InviteCodeCommand.cs" />
+    <Compile Include="Commands\InviteCommand.cs" />
+    <Compile Include="Commands\JoinCommand.cs" />
+    <Compile Include="Commands\KickCommand.cs" />
+    <Compile Include="Commands\LeaveCommand.cs" />
+    <Compile Include="Commands\ListCommand.cs" />
+    <Compile Include="Commands\LockCommand.cs" />
+    <Compile Include="Commands\LogOutCommand.cs" />
+    <Compile Include="Commands\MeCommand.cs" />
+    <Compile Include="Commands\NoteCommand.cs" />
+    <Compile Include="Commands\NudgeCommand.cs" />
+    <Compile Include="Commands\OpenCommand.cs" />
+    <Compile Include="Commands\PrivateMessageCommand.cs" />
+    <Compile Include="Commands\RemoveAdminCommand.cs" />
+    <Compile Include="Commands\RemoveOwnerCommand.cs" />
+    <Compile Include="Commands\ResetInviteCodeCommand.cs" />
+    <Compile Include="Commands\NickCommand.cs" />
+    <Compile Include="Commands\TopicCommand.cs" />
+    <Compile Include="Commands\UnAllowCommand.cs" />
+    <Compile Include="Commands\UserCommand.cs" />
+    <Compile Include="Commands\WhereCommand.cs" />
+    <Compile Include="Commands\WhoCommand.cs" />
     <Compile Include="ContentProviders\BBCNewsContentProvider.cs" />
     <Compile Include="ContentProviders\BashQDBContentProvider.cs" />
     <Compile Include="ContentProviders\AudioContentProvider.cs" />
@@ -810,7 +906,7 @@
     <Compile Include="ContentProviders\GoogleDocsFormProvider.cs" />
     <Compile Include="ContentProviders\SlideshareContentProvider.cs" />
     <Compile Include="ContentProviders\GistContentProvider.cs" />
-    <Compile Include="api\MessagesHandler.cs" />
+    <Compile Include="Http\ProxyHandler.cs" />
     <Compile Include="Hubs\Chat.cs" />
     <Compile Include="ContentProviders\CollegeHumorContentProvider.cs" />
     <Compile Include="ContentProviders\ImgurContentProvider.cs" />
@@ -818,12 +914,15 @@
     <Compile Include="ContentProviders\TweetContentProvider.cs" />
     <Compile Include="ContentProviders\ImageContentProvider.cs" />
     <Compile Include="ContentProviders\YoutubeContentProvider.cs" />
+    <Compile Include="Infrastructure\AjaxMinMinifier.cs" />
     <Compile Include="Infrastructure\Http.cs" />
+    <Compile Include="Infrastructure\NinjectWebApiDependencyResolver.cs" />
     <Compile Include="Infrastructure\RandomUtils.cs" />
     <Compile Include="Infrastructure\RegexExtensions.cs" />
     <Compile Include="Infrastructure\SafeCollection.cs" />
     <Compile Include="Infrastructure\TaskAsyncHelper.cs" />
     <Compile Include="Infrastructure\TextTransform.cs" />
+    <Compile Include="Infrastructure\QueryStringCollection.cs" />
     <Compile Include="Migrations\201111290920351_Passwords.cs" />
     <Compile Include="Migrations\201111290920351_Passwords.Designer.cs">
       <DependentUpon>201111290920351_Passwords.cs</DependentUpon>
@@ -892,6 +991,7 @@
     <Compile Include="Migrations\201205081819121_AdminUser.Designer.cs">
       <DependentUpon>201205081819121_AdminUser.cs</DependentUpon>
     </Compile>
+    <Compile Include="Models\CacheExtensions.cs" />
     <Compile Include="Models\ChatClient.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -910,6 +1010,8 @@
     <Compile Include="Models\ClientState.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Models\AspNetCache.cs" />
+    <Compile Include="Models\ICache.cs" />
     <Compile Include="Models\IJabbrRepository.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -938,7 +1040,6 @@
     <Compile Include="Services\IApplicationSettings.cs" />
     <Compile Include="Services\IChatService.cs" />
     <Compile Include="Services\ICryptoService.cs" />
-    <Compile Include="Services\INotificationService.cs" />
     <Compile Include="Infrastructure\StringExtensions.cs" />
     <Compile Include="Migrations\201111240945284_Initial.cs" />
     <Compile Include="Migrations\201111240945284_Initial.Designer.cs">
@@ -962,12 +1063,15 @@
     </Compile>
     <Compile Include="Migrations\MigrationsConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\INotificationService.cs" />
     <Compile Include="ViewModels\MessageViewModel.cs" />
     <Compile Include="ViewModels\RoomViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="packages.config" />
+    <Content Include="packages.config">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Auth\Login.ashx" />

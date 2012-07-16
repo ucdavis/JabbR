@@ -6,15 +6,6 @@
 (function ($, connection, window, ui, utility) {
     "use strict";
 
-    window.onerror = function () {
-        if (typeof (console) !== 'undefined') {
-            console.log('ERROR!!');
-            for (var i = 0; i < arguments.length; i++) {
-                console.log(arguments[i]);
-            }
-        }
-    };
-
     var chat = connection.chat,
         messageHistory = [],
         historyLocation = 0,
@@ -199,6 +190,10 @@
         if (added) {
             populateRoom(room.Name).done(function () {
                 ui.addMessage('You just entered ' + room.Name, 'notification', room.Name);
+
+                if (room.Welcome) {
+                    ui.addMessage(room.Welcome, 'welcome', room.Name);
+                }
             });
         }
     };
@@ -224,7 +219,6 @@
         ui.setUserName(chat.name);
         ui.addMessage('Welcome back ' + chat.name, 'notification', 'lobby');
         ui.addMessage('You can join any of the rooms on the right', 'notification', 'lobby');
-        ui.addMessage('Type /rooms to list all available rooms', 'notification', 'lobby');
         ui.addMessage('Type /logout to log out of chat', 'notification', 'lobby');
 
         // Process any urls that may contain room names
@@ -437,6 +431,10 @@
         document.location = document.location.pathname;
     };
 
+    chat.forceUpdate = function () {
+        ui.showUpdateUI();
+    };
+
     chat.showUserInfo = function (userInfo) {
         var lastActivityDate = userInfo.LastActivity.fromJsonDate();
         var status = "Currently " + userInfo.Status;
@@ -500,6 +498,16 @@
         var to = topic ? ' to ' + '"' + topic + '"' : '';
         var message = 'You have ' + action + ' the room topic' + to;
         ui.addMessage(message, 'notification', this.activeRoom);
+    };
+
+    chat.welcomeChanged = function (isCleared, welcome) {
+        var action = isCleared ? 'cleared' : 'set';
+        var to = welcome ? ' to:' : '';
+        var message = 'You have ' + action + ' the room welcome' + to;
+        ui.addMessage(message, 'notification', this.activeRoom);
+        if (welcome) {
+            ui.addMessage(welcome, 'welcome', this.activeRoom);
+        }
     };
 
     // Called when you have added or cleared a flag
@@ -704,7 +712,7 @@
     };
 
     chat.broadcastMessage = function (message, room) {
-        ui.addMessage(message, 'notification highlight', room);
+        ui.addMessage('ADMIN: ' + message, 'broadcast', room);
     };
 
     $ui.bind(ui.events.typing, function () {
@@ -791,6 +799,7 @@
     });
 
     $ui.bind(ui.events.focusit, function () {
+        isUnreadMessageForUser = false;
         focus = true;
         unread = 0;
         updateTitle();
@@ -879,8 +888,19 @@
         ui.addMessage('Welcome to ' + originalTitle, 'notification');
         ui.addMessage('Type /help to see the list of commands', 'notification');
 
-        connection.hub.start(function () {
-            chat.join()
+        function initConnection() {
+            var logging = $.cookie('jabbr.logging') === '1',
+                transport = $.cookie('jabbr.transport'),
+                options = {};
+
+            if (transport) {
+                options['transport'] = transport;
+            }
+
+            connection.hub.logging = logging;
+
+            connection.hub.start(options, function () {
+                chat.join()
                 .fail(function (e) {
                     ui.addMessage(e, 'error');
                 })
@@ -900,39 +920,41 @@
                             ui.setCommands(commands);
                         });
                 });
-        });
+            });
 
-        connection.hub.reconnected(function () {
-            if (checkingStatus === true) {
-                return;
-            }
+            connection.hub.reconnected(function () {
+                if (checkingStatus === true) {
+                    return;
+                }
 
-            checkingStatus = true;
+                checkingStatus = true;
 
-            chat.checkStatus()
-                .done(function (requiresUpdate) {
-                    if (requiresUpdate === true) {
-                        ui.showUpdateUI();
-                    }
-                })
-                .always(function () {
-                    checkingStatus = false;
-                });
-        });
+                chat.checkStatus()
+                    .done(function (requiresUpdate) {
+                        if (requiresUpdate === true) {
+                            ui.showUpdateUI();
+                        }
+                    })
+                    .always(function () {
+                        checkingStatus = false;
+                    });
+            });
 
-        connection.hub.disconnected(function () {
-            ui.showDisconnectUI();
-        });
+            connection.hub.disconnected(function () {
+                ui.showDisconnectUI();
+            });
 
-        connection.hub.error(function (err) {
-            // Make all pening messages failed if there's an error
-            for (var id in pendingMessages) {
-                clearTimeout(pendingMessages[id]);
-                ui.failMessage(id);
-                delete pendingMessages[id];
-            }
-        });
+            connection.hub.error(function (err) {
+                // Make all pening messages failed if there's an error
+                for (var id in pendingMessages) {
+                    clearTimeout(pendingMessages[id]);
+                    ui.failMessage(id);
+                    delete pendingMessages[id];
+                }
+            });
+        }
 
+        initConnection();
     });
 
 })(jQuery, $.connection, window, window.chat.ui, window.chat.utility);

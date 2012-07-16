@@ -8,20 +8,25 @@ namespace JabbR.Models
         IQueryable<ChatRoom> Rooms { get; }
         IQueryable<ChatUser> Users { get; }
 
+        IQueryable<ChatUser> GetOnlineUsers(ChatRoom room);
+
         IQueryable<ChatUser> SearchUsers(string name);
-        IQueryable<ChatMessage> GetMessagesByRoom(string roomName);
+        IQueryable<ChatMessage> GetMessagesByRoom(ChatRoom room);
         IQueryable<ChatMessage> GetPreviousMessages(string messageId);
         IQueryable<ChatRoom> GetAllowedRooms(ChatUser user);
         ChatMessage GetMessagesById(string id);
 
         ChatUser GetUserById(string userId);
-        ChatRoom GetRoomByName(string roomName, bool includeUsers = false, bool includeOwners = false);
+        ChatRoom GetRoomByName(string roomName);
 
         ChatUser GetUserByName(string userName);
         ChatUser GetUserByClientId(string clientId);
         ChatUser GetUserByIdentity(string userIdentity);
 
         ChatClient GetClientById(string clientId, bool includeUser = false);
+
+        void AddUserRoom(ChatUser user, ChatRoom room);
+        void RemoveUserRoom(ChatUser user, ChatRoom room);
 
         void Add(ChatClient client);
         void Add(ChatMessage message);
@@ -32,5 +37,7 @@ namespace JabbR.Models
         void Remove(ChatUser user);
         void RemoveAllClients();
         void CommitChanges();
+
+        bool IsUserInRoom(ChatUser user, ChatRoom room);
     }
 }

@@ -19,15 +19,20 @@ namespace JabbR
     {
         private readonly IJabbrRepository _repository;
         private readonly IChatService _service;
+        private readonly ICache _cache;
         private readonly IResourceProcessor _resourceProcessor;
         private readonly IApplicationSettings _settings;
 
-        public Chat(IApplicationSettings settings, IResourceProcessor resourceProcessor, IChatService service, IJabbrRepository repository)
+        private static readonly Version _version = typeof(Chat).Assembly.GetName().Version;
+        private static readonly string _versionString = _version.ToString();
+
+        public Chat(IApplicationSettings settings, IResourceProcessor resourceProcessor, IChatService service, IJabbrRepository repository, ICache cache)
         {
             _settings = settings;
             _resourceProcessor = resourceProcessor;
             _service = service;
             _repository = repository;
+            _cache = cache;
         }
 
         private string UserAgent
@@ -48,7 +53,7 @@ namespace JabbR
             {
                 string version = Caller.version;
                 return String.IsNullOrEmpty(version) ||
-                        new Version(version) != typeof(Chat).Assembly.GetName().Version;
+                        new Version(version) != _version;
             }
         }
 
@@ -76,7 +81,7 @@ namespace JabbR
         private void SetVersion()
         {
             // Set the version on the client
-            Caller.version = typeof(Chat).Assembly.GetName().Version.ToString();
+            Caller.version = _versionString;
         }
 
         public bool CheckStatus()
@@ -161,10 +166,11 @@ namespace JabbR
             string id = Caller.id;
 
             ChatUser user = _repository.VerifyUserId(id);
-            ChatRoom room = _repository.VerifyUserRoom(user, message.Room);
+            ChatRoom room = _repository.VerifyUserRoom(_cache, user, message.Room);
 
             // Update activity *after* ensuring the user, this forces them to be active
             UpdateActivity(user, room);
+
 
             HashSet<string> links;
             var messageText = ParseChatMessageText(message.Content, out links);
@@ -192,13 +198,6 @@ namespace JabbR
 
             return outOfSync;
         }
-
-        //// TODO: Deprecate
-        //public bool Send(string content)
-        //{
-        //    string roomName = Caller.activeRoom;
-        //    return Send(content, roomName);
-        //}
 
         private string ParseChatMessageText(string content, out HashSet<string> links)
         {
@@ -233,7 +232,6 @@ namespace JabbR
                 new { Name = "me", Description = "Type /me 'does anything'" },
                 new { Name = "msg", Description = "Type /msg @nickname (message) to send a private message to nickname. @ is optional." },
                 new { Name = "leave", Description = "Type /leave to leave the current room. Type /leave [room name] to leave a specific room." },
-                new { Name = "rooms", Description = "Type /rooms to show the list of rooms" },
                 new { Name = "where", Description = "Type /where [name] to list the rooms that user is in" },
                 new { Name = "who", Description = "Type /who to show a list of all users, /who [name] to show specific information about that user" },
                 new { Name = "list", Description = "Type /list (room) to show a list of users in the room" },
@@ -245,6 +243,7 @@ namespace JabbR
                 new { Name = "addowner", Description = "Type /addowner [user] [room] - To add an owner a user as an owner to the specified room. Only works if you're an owner of that room." },
                 new { Name = "removeowner", Description = "Type /removeowner [user] [room] - To remove an owner from the specified room. Only works if you're the creator of that room." },
                 new { Name = "lock", Description = "Type /lock [room] - To make a room private. Only works if you're the creator of that room." },
+                new { Name = "open", Description = "Type /open [room] - To open a closed room. Only works if you're an owner of that room." },
                 new { Name = "close", Description = "Type /close [room] - To close a room. Only works if you're an owner of that room." },
                 new { Name = "allow", Description = "Type /allow [user] [room] - To give a user permission to a private room. Only works if you're an owner of that room." },
                 new { Name = "unallow", Description = "Type /unallow [user] [room] - To revoke a user's permission to a private room. Only works if you're an owner of that room." },
@@ -254,7 +253,9 @@ namespace JabbR
                 new { Name = "afk", Description = "Type /afk - (aka. Away From Keyboard). To set a temporary note shown via a paperclip icon next to your name, with the message appearing when you hover over it. This note will disappear when you first resume typing."},
                 new { Name = "flag", Description = "Type /flag [Iso 3366-2 Code] - To show a small flag which represents your nationality. Eg. /flag US for a USA flag. ISO Reference Chart: http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2 (Apologies to people with dual citizenship). "},
                 new { Name = "topic", Description = "Type /topic [topic] to set the room topic. Type /topic to clear the room's topic." },
-                new { Name = "roomname", Description = "Type #roomname to add a link to that room in your message. Eg. If you add \"#meta\" to your message it will be replaced with a link to /#/rooms/meta." }
+                new { Name = "welcome", Description = "Type /welcome [message] to set the room's welcome message. Type /welcome to clear the room's welcome message." },
+                new { Name = "roomname", Description = "Type #roomname to add a link to that room in your message. Eg. If you add \"#meta\" to your message it will be replaced with a link to /#/rooms/meta." },
+                new { Name = "broadcast",  Description = "Sends a message to all users in all rooms. Only administrators can use this command." }
             };
         }
 
@@ -299,19 +300,26 @@ namespace JabbR
                 return null;
             }
 
-            var recentMessages = (from m in _repository.GetMessagesByRoom(roomName)
+            var recentMessages = (from m in _repository.GetMessagesByRoom(room)
                                   orderby m.When descending
-                                  select m).Take(30);
+                                  select m).Take(30).ToList();
+
+            // Reverse them since we want to get them in chronological order
+            recentMessages.Reverse();
+
+            // Get online users through the repository
+            IEnumerable<ChatUser> onlineUsers = _repository.GetOnlineUsers(room).ToList();
 
             return new RoomViewModel
             {
                 Name = room.Name,
-                Users = from u in room.Users.Online()
+                Users = from u in onlineUsers
                         select new UserViewModel(u),
                 Owners = from u in room.Owners.Online()
                          select u.Name,
-                RecentMessages = recentMessages.AsEnumerable().Reverse().Select(m => new MessageViewModel(m)),
-                Topic = ConvertUrlsAndRoomLinks(room.Topic ?? "")
+                RecentMessages = recentMessages.Select(m => new MessageViewModel(m)),
+                Topic = ConvertUrlsAndRoomLinks(room.Topic ?? ""),
+                Welcome = ConvertUrlsAndRoomLinks(room.Welcome ?? "")
             };
         }
 
@@ -341,9 +349,10 @@ namespace JabbR
                 return;
             }
 
-            ChatRoom room = _repository.VerifyUserRoom(user, roomName);
+            ChatRoom room = _repository.VerifyUserRoom(_cache, user, roomName);
 
             UpdateActivity(user, room);
+
             var userViewModel = new UserViewModel(user);
             Clients[room.Name].setTyping(userViewModel, room.Name);
         }
@@ -430,7 +439,7 @@ namespace JabbR
             string clientId = Context.ConnectionId;
             string userId = Caller.id;
 
-            var commandManager = new CommandManager(clientId, UserAgent, userId, room, _service, _repository, this);
+            var commandManager = new CommandManager(clientId, UserAgent, userId, room, _service, _repository, _cache, this);
             return commandManager.TryHandleCommand(command);
         }
 
@@ -522,7 +531,8 @@ namespace JabbR
             var roomViewModel = new RoomViewModel
             {
                 Name = room.Name,
-                Private = room.Private
+                Private = room.Private,
+                Welcome = ConvertUrlsAndRoomLinks(room.Welcome ?? "")
             };
 
             var isOwner = user.OwnedRooms.Contains(room);
@@ -585,7 +595,7 @@ namespace JabbR
 
             // If the target user is in the target room.
             // Tell everyone in the target room that a new owner was added
-            if (ChatService.IsUserInRoom(targetRoom, targetUser))
+            if (_repository.IsUserInRoom(_cache, targetUser, targetRoom))
             {
                 Clients[targetRoom.Name].addOwner(userViewModel, targetRoom.Name);
             }
@@ -606,7 +616,7 @@ namespace JabbR
 
             // If the target user is in the target room.
             // Tell everyone in the target room that the owner was removed
-            if (ChatService.IsUserInRoom(targetRoom, targetUser))
+            if (_repository.IsUserInRoom(_cache, targetUser, targetRoom))
             {
                 Clients[targetRoom.Name].removeOwner(userViewModel, targetRoom.Name);
             }
@@ -753,11 +763,6 @@ namespace JabbR
             Caller.showCommands();
         }
 
-        void INotificationService.ShowRooms()
-        {
-            Caller.showRooms(GetRooms());
-        }
-
         void INotificationService.Invite(ChatUser user, ChatUser targetUser, ChatRoom targetRoom)
         {
             var transform = new TextTransform(_repository);
@@ -875,6 +880,15 @@ namespace JabbR
             Clients[room.Name].changeTopic(roomViewModel);
         }
 
+        void INotificationService.ChangeWelcome(ChatUser user, ChatRoom room)
+        {
+            bool isWelcomeCleared = String.IsNullOrWhiteSpace(room.Welcome);
+            var parsedWelcome = ConvertUrlsAndRoomLinks(room.Welcome ?? "");
+            foreach (var client in user.ConnectedClients) {
+                Clients[client.Id].welcomeChanged(isWelcomeCleared, parsedWelcome);
+            }
+        }
+
         void INotificationService.AddAdmin(ChatUser targetUser)
         {
             foreach (var client in targetUser.ConnectedClients)
@@ -884,7 +898,7 @@ namespace JabbR
             }
 
             var userViewModel = new UserViewModel(targetUser);
-            
+
             // Tell all users in rooms to change the admin status
             foreach (var room in targetUser.Rooms)
             {
@@ -924,6 +938,11 @@ namespace JabbR
             }
         }
 
+        void INotificationService.ForceUpdate()
+        {
+            Clients.forceUpdate();
+        }
+
         private void OnRoomChanged(ChatRoom room)
         {
             var roomViewModel = new RoomViewModel
@@ -933,7 +952,7 @@ namespace JabbR
             };
 
             // Update the room count
-            Clients.updateRoomCount(roomViewModel, room.Users.Online().Count());
+            Clients.updateRoomCount(roomViewModel, _repository.GetOnlineUsers(room).Count());
         }
 
         private ClientState GetClientState()
