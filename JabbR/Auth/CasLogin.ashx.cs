@@ -11,7 +11,7 @@ namespace JabbR.Auth
         public void ProcessRequest(HttpContext context)
         {
             CASHelper.Login();
-            HttpContext.Current.Response.Redirect("default.aspx", true);
+            HttpContext.Current.Response.Redirect("~/default.aspx", true);
         }
 
         public bool IsReusable
