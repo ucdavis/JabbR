@@ -159,8 +159,8 @@
   <section id="page" role="application">
     <header id="heading" role="heading">
       <div class="banner" role="banner">
-        <h1>Jabb</h1>
-        <div class="jabbrLogo" id="logo"></div>
+        <h1>Jabbr at UC Davis</h1>
+        <%--<div class="jabbrLogo" id="logo"></div>--%>
         <div>
           Powered by <a href="https://github.com/SignalR/SignalR" target="_blank">SignalR</a>
         </div>
