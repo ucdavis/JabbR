@@ -641,6 +641,13 @@
         });
     };
 
+    chat.showInfo = function (header, info) {
+        ui.addMessage(header, 'list-header');
+        $.each(info, function () {
+            ui.addMessage(this.Name + ' - ' + this.Description, 'list-item');
+        });
+    };
+
     chat.showUsersInRoom = function (room, names) {
         ui.addMessage('Users in ' + room, 'list-header');
         if (names.length === 0) {

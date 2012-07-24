@@ -229,6 +229,7 @@ namespace JabbR
                 new { Name = "nick", Description = "Type /nick [user] [password] to create a user or change your nickname. You can change your password with /nick [user] [oldpassword] [newpassword]" },
                 new { Name = "join", Description = "Type /join [room] [inviteCode] - to join a channel of your choice. If it is private and you have an invite code, enter it after the room name" },
                 new { Name = "create", Description = "Type /create [room] to create a room" },
+                new { Name = "build", Description = "Type /build shows available builds, /build [name] gets a specific build" },
                 new { Name = "me", Description = "Type /me 'does anything'" },
                 new { Name = "msg", Description = "Type /msg @nickname (message) to send a private message to nickname. @ is optional." },
                 new { Name = "leave", Description = "Type /leave to leave the current room. Type /leave [room name] to leave a specific room." },
@@ -761,6 +762,11 @@ namespace JabbR
         void INotificationService.ShowHelp()
         {
             Caller.showCommands();
+        }
+
+        void INotificationService.ShowInfo(string header, object info)
+        {
+            Caller.showInfo(header, info);
         }
 
         void INotificationService.Invite(ChatUser user, ChatUser targetUser, ChatRoom targetRoom)
