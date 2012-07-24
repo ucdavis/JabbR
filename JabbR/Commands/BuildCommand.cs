@@ -2,6 +2,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using JabbR.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 
@@ -56,6 +57,7 @@ namespace JabbR.Commands
                 var buildInfo = new[]
                                     {
                                         new {Name = "Status", Description = string.Format("[<strong>{0}</strong>] -- {1}", jsonResults["status"].Value<string>(), jsonResults["statusText"].Value<string>())},
+                                        new {Name = "Started At", Description = jsonResults["startDate"].Value<string>()},
                                         new {Name = "Details", Description = string.Format("<a href='{0}'>{0}</a>", jsonResults["webUrl"].Value<string>())}
                                     };
 
