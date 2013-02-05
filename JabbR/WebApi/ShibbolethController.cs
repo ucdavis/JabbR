@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -65,12 +66,13 @@ namespace JabbR.WebApi
 
         private ChatUser GetUser(string username, string identity, string email)
         {
-            var user = _repository.GetUserById(identity);
+            var user = _repository.Users.FirstOrDefault(x => x.Identity.Equals(identity, StringComparison.InvariantCultureIgnoreCase));
+            
             if (user == null)
             {
                 user = new ChatUser
                     {
-                        Id = identity,
+                        Id = Guid.NewGuid().ToString("d"),
                         Identity = identity,
                         Name = username,
                         Email = email,
