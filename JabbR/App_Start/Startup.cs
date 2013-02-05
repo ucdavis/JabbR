@@ -192,6 +192,11 @@ namespace JabbR
             config.Formatters.Add(jsonFormatter);
             config.DependencyResolver = new NinjectWebApiDependencyResolver(kernel);
 
+            config.Routes.MapHttpRoute(
+                name: "Shibboleth",
+                routeTemplate: "auth",
+                defaults: new {controller = "Shibboleth"}
+            );
 
             config.Routes.MapHttpRoute(
                 name: "LoginV1",
