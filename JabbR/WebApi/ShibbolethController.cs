@@ -31,10 +31,6 @@ namespace JabbR.WebApi
             var email = context.Request.ServerVariables["HTTP_MAIL"] ?? string.Empty;
             var username = context.Request.ServerVariables["HTTP_DISPLAYNAME"] ?? string.Empty;
 
-            identity = "chester";
-            email = "bob@bob.com";
-            username = identity;
-
             if (string.IsNullOrWhiteSpace(identity))
             {
                 throw new SecurityException(string.Format("You need to be logged in with Shibboleth! EPPN: {0}, REMOTE_USER: {1}", identity, context.Request.ServerVariables["HTTP_REMOTEUSER"]));
