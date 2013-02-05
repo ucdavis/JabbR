@@ -25,7 +25,8 @@ namespace JabbR.Nancy
                     return View["index", viewModel];
                 }
 
-                return Response.AsRedirect(String.Format("~/account/login?returnUrl={0}", HttpUtility.UrlEncode(Request.Path)));
+                return Response.AsRedirect(String.Format("~/auth?returnUrl={0}", HttpUtility.UrlEncode(Request.Path)));
+                //return Response.AsRedirect(String.Format("~/account/login?returnUrl={0}", HttpUtility.UrlEncode(Request.Path)));
             };
         }
     }

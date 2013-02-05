@@ -23,7 +23,7 @@ namespace JabbR.WebApi
             _tokenService = tokenService;
         }
 
-        public HttpResponseMessage Get()
+        public HttpResponseMessage Get(string returnUrl)
         {
             var context = HttpContext.Current;
 
@@ -43,9 +43,7 @@ namespace JabbR.WebApi
             username = Regex.Replace(
                 string.IsNullOrWhiteSpace(username) ? identity : username.Replace(" ", ""),
                 @"[^A-Za-z0-9]+", "");
-
-
-
+            
             var user = GetUser(username, identity, email);
             string userToken = _tokenService.GetAuthenticationToken(user);
             
@@ -57,7 +55,14 @@ namespace JabbR.WebApi
             
             var response = Request.CreateResponse(HttpStatusCode.Moved);
             response.Headers.AddCookies(new[] {cookie});
+            
             var url = context.Request.Url.Scheme + "://" + context.Request.Url.Authority;
+
+            if (!string.IsNullOrWhiteSpace(returnUrl))
+            {
+                url += returnUrl;
+            }
+
             response.Headers.Location = new Uri(url);
             return response;
         }
