@@ -1193,6 +1193,7 @@
     <Compile Include="ViewModels\MessageViewModel.cs" />
     <Compile Include="ViewModels\RoomViewModel.cs" />
     <Compile Include="ViewModels\UserViewModel.cs" />
+    <Compile Include="WebApi\ShibbolethController.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config">
