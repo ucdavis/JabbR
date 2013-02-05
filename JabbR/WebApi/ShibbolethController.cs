@@ -57,7 +57,8 @@ namespace JabbR.WebApi
             
             var response = Request.CreateResponse(HttpStatusCode.Moved);
             response.Headers.AddCookies(new[] {cookie});
-            response.Headers.Location = new Uri("http://localhost:16207");
+            var url = context.Request.Url.Scheme + "://" + context.Request.Url.Authority;
+            response.Headers.Location = new Uri(url);
             return response;
         }
 
